@@ -1,16 +1,22 @@
 import { Stack } from 'expo-router';
-import "./global.css"
+import { AuthProvider } from '../contexts/AuthContext';
+import ErrorBoundary from '../components/ErrorBoundary';
+import "../global.css"
 
 export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen 
-        name="index" 
-        options={{
-          title: 'Home',
-          headerShown: false
-        }} 
-      />
-    </Stack>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Stack>
+          <Stack.Screen 
+            name="index" 
+            options={{
+              title: 'Home',
+              headerShown: false
+            }} 
+          />
+        </Stack>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
