@@ -25,7 +25,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "build": {
+        "babel": {
+          "include": ["nativewind/preset"]
+        }
+      }
     },
     "plugins": [
       "expo-router"

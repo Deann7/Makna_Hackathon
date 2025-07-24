@@ -24,18 +24,25 @@ export default function AuthScreen() {
 
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Error', 'Mohon isi semua field');
       return;
     }
 
     setLoading(true);
     try {
-      const { error } = await signIn(email, password);
-      if (error) {
-        Alert.alert('Error', error.message);
+      const result = await signIn(email, password);
+      if (result.error) {
+        if (result.error.message.includes('Invalid login credentials')) {
+          Alert.alert('Login Gagal', 'Email atau password salah. Pastikan Anda sudah terdaftar.');
+        } else if (result.error.message.includes('Email not confirmed')) {
+          Alert.alert('Email Belum Dikonfirmasi', 'Silakan cek email Anda untuk konfirmasi akun.');
+        } else {
+          Alert.alert('Error', result.error.message);
+        }
       }
+      // Success case handled by auth state change
     } catch (err) {
-      Alert.alert('Error', 'An unexpected error occurred');
+      Alert.alert('Error', 'Terjadi kesalahan tidak terduga');
     } finally {
       setLoading(false);
     }
@@ -59,24 +66,37 @@ export default function AuthScreen() {
 
     setLoading(true);
     try {
+      // Generate username from first and last name
       const username = `${firstName.toLowerCase()}_${lastName.toLowerCase()}`;
-      const fullName = `${firstName} ${lastName}`;
       
-      const { error } = await signUp(email, password, username, '', fullName);
-      if (error) {
-        Alert.alert('Error', error.message);
+      const result = await signUp(email, password, firstName, lastName, username);
+      if (result.error) {
+        if (result.error.message.includes('already registered')) {
+          Alert.alert('Error', 'Email sudah terdaftar. Silakan gunakan email lain atau login.');
+        } else {
+          Alert.alert('Error', result.error.message);
+        }
       } else {
-        Alert.alert('Success', 'Account created successfully!');
-        setCurrentScreen('signin');
-        // Reset form
-        setEmail('');
-        setPassword('');
-        setConfirmPassword('');
-        setFirstName('');
-        setLastName('');
+        Alert.alert(
+          'Registrasi Berhasil!', 
+          'Akun Anda telah dibuat. Silakan login dengan email dan password yang baru dibuat.',
+          [
+            {
+              text: 'Login Sekarang',
+              onPress: () => {
+                setCurrentScreen('signin');
+                // Keep email, clear others
+                setPassword('');
+                setConfirmPassword('');
+                setFirstName('');
+                setLastName('');
+              }
+            }
+          ]
+        );
       }
     } catch (err) {
-      Alert.alert('Error', 'An unexpected error occurred');
+      Alert.alert('Error', 'Terjadi kesalahan tidak terduga');
     } finally {
       setLoading(false);
     }

@@ -1,17 +1,28 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Text, Dimensions } from 'react-native';
+import { View, TouchableOpacity, Text, Dimensions, Modal, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isWeb, webSafeAreaInsets } from './WebCompatibility';
 import HomeScreen from './screens/HomeScreen';
 import ExploreScreen from './screens/ExploreScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import QRScannerScreen from './screens/QRScannerScreen';
+import TripProgressScreen from './screens/TripProgressScreen';
+import TestQRData from './TestQRData';
+import TestAuthFlow from './TestAuthFlow';
+import WebDebugBanner from './WebDebugBanner';
 
 const { width } = Dimensions.get('window');
 
 export default function TabNavigation() {
   const [activeTab, setActiveTab] = useState('Home');
-  const insets = useSafeAreaInsets();
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [showTestQR, setShowTestQR] = useState(false);
+  const [showTestAuth, setShowTestAuth] = useState(false);
+  const [activeTripData, setActiveTripData] = useState(null);
+  const [showTripProgress, setShowTripProgress] = useState(false);
+  const insets = isWeb ? webSafeAreaInsets : useSafeAreaInsets();
 
   const tabs = [
     { name: 'Home', icon: 'home', iconOutline: 'home-outline', component: HomeScreen, label: 'Beranda' },
@@ -20,17 +31,64 @@ export default function TabNavigation() {
     { name: 'Profile', icon: 'person', iconOutline: 'person-outline', component: ProfileScreen, label: 'Profil' },
   ];
 
+  const handleTripStart = (tripData) => {
+    setActiveTripData(tripData);
+    setShowTripProgress(true);
+  };
+
+  const handleTripComplete = (badgeData) => {
+    setShowTripProgress(false);
+    setActiveTripData(null);
+    // Could show badge earned screen here
+    setActiveTab('Home'); // Return to home to see updated data
+  };
+
   const renderContent = () => {
     const ActiveComponent = tabs.find(tab => tab.name === activeTab)?.component;
-    return ActiveComponent ? <ActiveComponent /> : <HomeScreen />;
+    if (ActiveComponent) {
+      const props = { onTripStart: handleTripStart };
+      if (activeTab === 'Profile') {
+        props.onShowTestAuth = () => setShowTestAuth(true);
+      }
+      return <ActiveComponent {...props} />;
+    }
+    return <HomeScreen onTripStart={handleTripStart} />;
   };
 
   return (
-    <View className="flex-1">
+    <View className="flex-1" style={isWeb ? { maxWidth: 480, marginHorizontal: 'auto', backgroundColor: '#f8fafc' } : {}}>
+      {/* Web Debug Banner */}
+      <WebDebugBanner />
+      
       {/* Main Content */}
       <View className="flex-1">
         {renderContent()}
       </View>
+
+      {/* Floating QR Scanner Button */}
+      <TouchableOpacity
+        onPress={() => {
+          Alert.alert(
+            'Scan QR Code',
+            'Pilih metode untuk memulai perjalanan',
+            [
+              { text: 'Batal', style: 'cancel' },
+              { text: 'Test QR', onPress: () => setShowTestQR(true) },
+              { text: 'Scan Kamera', onPress: () => setShowQRScanner(true) }
+            ]
+          );
+        }}
+        className="absolute bottom-20 right-6 bg-batik-600 w-14 h-14 rounded-full justify-center items-center shadow-lg"
+        style={{
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 8,
+        }}
+      >
+        <Ionicons name="qr-code" size={28} color="#F5EFE7" />
+      </TouchableOpacity>
 
       {/* Bottom Tab Bar */}
       <View 
@@ -88,6 +146,56 @@ export default function TabNavigation() {
           })}
         </View>
       </View>
+
+      {/* QR Scanner Modal */}
+      <Modal
+        visible={showQRScanner}
+        animationType="slide"
+        onRequestClose={() => setShowQRScanner(false)}
+      >
+        <QRScannerScreen
+          onTripStart={handleTripStart}
+          onClose={() => setShowQRScanner(false)}
+        />
+      </Modal>
+
+      {/* Trip Progress Modal */}
+      <Modal
+        visible={showTripProgress}
+        animationType="slide"
+        onRequestClose={() => setShowTripProgress(false)}
+      >
+        {activeTripData && (
+          <TripProgressScreen
+            tripData={activeTripData}
+            onTripComplete={handleTripComplete}
+            onClose={() => setShowTripProgress(false)}
+          />
+        )}
+      </Modal>
+
+      {/* Test QR Modal */}
+      <Modal
+        visible={showTestQR}
+        animationType="slide"
+        onRequestClose={() => setShowTestQR(false)}
+      >
+        <TestQRData
+          onTripStart={handleTripStart}
+          onClose={() => setShowTestQR(false)}
+        />
+      </Modal>
+
+      {/* Test Auth Modal */}
+      <Modal
+        visible={showTestAuth}
+        animationType="slide"
+        onRequestClose={() => setShowTestAuth(false)}
+      >
+        <TestAuthFlow
+          onClose={() => setShowTestAuth(false)}
+        />
+      </Modal>
     </View>
   );
 }

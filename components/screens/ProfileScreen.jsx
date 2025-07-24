@@ -5,7 +5,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import AuthStatus from '../AuthStatus';
 import EditProfileModal from '../EditProfileModal';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ onShowTestAuth }) {
   const { user, profile, signOut } = useAuthContext();
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -273,6 +273,19 @@ export default function ProfileScreen() {
               <Text className="text-batik-800 font-medium ml-4 flex-1">Beri Rating Aplikasi</Text>
               <Ionicons name="chevron-forward" size={20} color="#A0522D" />
             </TouchableOpacity>
+
+            {onShowTestAuth && (
+              <TouchableOpacity 
+                onPress={onShowTestAuth}
+                className="p-4 flex-row items-center border-b border-batik-100"
+              >
+                <View className="bg-orange-500 w-10 h-10 rounded-lg justify-center items-center">
+                  <Ionicons name="code" size={20} color="white" />
+                </View>
+                <Text className="text-batik-800 font-medium ml-4 flex-1">Test Auth Flow</Text>
+                <Ionicons name="chevron-forward" size={20} color="#A0522D" />
+              </TouchableOpacity>
+            )}
 
             {user && (
               <TouchableOpacity 
