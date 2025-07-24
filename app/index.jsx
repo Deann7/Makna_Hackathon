@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
 import TabNavigation from '../components/TabNavigation';
 import SplashScreen from '../components/SplashScreen';
 import LoadingScreen from '../components/LoadingScreen';
 import AuthScreen from '../components/screens/AuthScreen';
+import FloatingChatButton from '../components/FloatingChatButton';
 import { useAuthContext } from '../contexts/AuthContext';
 
 export default function Home() {
@@ -51,7 +53,10 @@ export default function Home() {
   return (
     <>
       <StatusBar style="light" backgroundColor="#6F4E37" />
-      <TabNavigation />
+      <View style={{ flex: 1 }}>
+        <TabNavigation />
+        <FloatingChatButton />
+      </View>
     </>
   );
 }
