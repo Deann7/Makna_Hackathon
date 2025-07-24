@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path } from 'react-native-svg';
 import { useAuthContext } from '../../contexts/AuthContext';
+import LogoIcon from '../LogoIcon';
 
 export default function AuthScreen() {
   const [currentScreen, setCurrentScreen] = useState('welcome'); // welcome, signin, register-email, register-info
@@ -20,20 +20,7 @@ export default function AuthScreen() {
   const { signIn, signUp } = useAuthContext();
 
   // Logo SVG Component (simplified version of your icon)
-  const LogoIcon = () => (
-    <Svg width={120} height={120} viewBox="0 0 100 100">
-      <Path
-        d="M20 20h60v60H20z M30 30h40v40H30z M40 40h20v20H40z"
-        fill="#461C07"
-        stroke="#461C07"
-        strokeWidth="2"
-      />
-      <Path
-        d="M35 25 Q50 35 65 25 Q60 40 50 50 Q40 40 35 25z"
-        fill="#461C07"
-      />
-    </Svg>
-  );
+
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -128,7 +115,7 @@ export default function AuthScreen() {
             </Text>
             
             <View className="mb-8">
-              <LogoIcon />
+              <LogoIcon width={125} height={126} />
             </View>
             
             <Text 
@@ -147,7 +134,7 @@ export default function AuthScreen() {
           <View className="w-full max-w-sm space-y-4">
             <TouchableOpacity
               onPress={() => setCurrentScreen('register-email')}
-              className="rounded-lg py-4 px-6 shadow-sm"
+              className="rounded-lg py-4 px-6 shadow-sm mb-6"
               style={{ backgroundColor: '#461C07' }}
               activeOpacity={0.8}
             >
