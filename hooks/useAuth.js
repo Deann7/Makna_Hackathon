@@ -84,8 +84,15 @@ export function useAuth() {
           phone_number: phoneNumber,
           full_name: fullName
         }
+        // emailRedirectTo dihapus untuk disable email verification
       }
     });
+    
+    // Jika registrasi berhasil dan ada user tapi belum confirmed, auto confirm
+    if (data.user && !data.user.email_confirmed_at) {
+      console.log('User registered successfully, no email confirmation required');
+    }
+    
     return { data, error };
   };
 

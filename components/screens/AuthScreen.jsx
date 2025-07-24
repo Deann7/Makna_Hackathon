@@ -49,19 +49,28 @@ export default function AuthScreen() {
     
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password, username, phoneNumber, fullName);
+        const { data, error } = await signUp(email, password, username, phoneNumber, fullName);
         if (error) {
           Alert.alert('Error', error.message);
         } else {
-          Alert.alert('Success', 'Please check your email to verify your account');
-          setIsSignUp(false);
-          // Reset form
-          setEmail('');
-          setPassword('');
-          setConfirmPassword('');
-          setUsername('');
-          setPhoneNumber('');
-          setFullName('');
+          Alert.alert(
+            'Registrasi Berhasil!', 
+            'Akun Anda telah berhasil dibuat dan langsung aktif. Silakan login dengan email dan password Anda.',
+            [
+              {
+                text: 'Login Sekarang',
+                onPress: () => {
+                  setIsSignUp(false);
+                  // Keep email, clear other fields
+                  setPassword('');
+                  setConfirmPassword('');
+                  setUsername('');
+                  setPhoneNumber('');
+                  setFullName('');
+                }
+              }
+            ]
+          );
         }
       } else {
         const { error } = await signIn(email, password);
