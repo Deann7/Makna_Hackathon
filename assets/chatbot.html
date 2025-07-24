@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAKNA Chatbot</title>
+  <script src="https://js.puter.com/v2/"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+    #chat-container { max-width: 400px; margin: 0 auto; padding: 16px; background: #fff; min-height: 100vh; box-sizing: border-box; }
+    .bubble { padding: 10px 14px; border-radius: 16px; margin: 8px 0; max-width: 80%; }
+    .user { background: #d1e7dd; align-self: flex-end; }
+    .ai { background: #e2e3e5; align-self: flex-start; }
+    #messages { display: flex; flex-direction: column; }
+    #input-row { display: flex; margin-top: 12px; }
+    #user-input { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #ccc; }
+    #send-btn { margin-left: 8px; padding: 8px 16px; border-radius: 8px; border: none; background: #007bff; color: #fff; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <h2>MAKNA AI Chatbot</h2>
+    <div id="messages"></div>
+    <div id="input-row">
+      <input id="user-input" type="text" placeholder="Tulis pesan..." />
+      <button id="send-btn">Kirim</button>
+    </div>
+  </div>
+  <script>
+    const messagesDiv = document.getElementById('messages');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    function addBubble(text, sender) {
+      const div = document.createElement('div');
+      div.className = 'bubble ' + sender;
+      div.textContent = text;
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+      addBubble(text, 'user');
+      userInput.value = '';
+      addBubble('...', 'ai');
+      try {
+        const response = await window.Puter.AI.ask({
+          prompt: text,
+          model: 'gemini-pro',
+        });
+        messagesDiv.removeChild(messagesDiv.lastChild); // remove loading
+        addBubble(response.text, 'ai');
+      } catch (e) {
+        messagesDiv.removeChild(messagesDiv.lastChild);
+        addBubble('Gagal mendapatkan balasan.', 'ai');
+      }
+    }
+
+    sendBtn.onclick = sendMessage;
+    userInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') sendMessage();
+    });
+  </script>
+</body>
+</html>

@@ -18,8 +18,8 @@ export default function AuthScreen() {
   const { signIn, signUp, registerUser } = useAuthContext();
 
   const handleAuth = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    if ((!email && !username) || !password) {
+      Alert.alert('Error', 'Isi email/username dan password');
       return;
     }
 
@@ -53,27 +53,20 @@ export default function AuthScreen() {
         if (error) {
           Alert.alert('Error', error.message);
         } else {
-          Alert.alert(
-            'Registrasi Berhasil!', 
-            'Akun Anda telah berhasil dibuat dan langsung aktif. Silakan login dengan email dan password Anda.',
-            [
-              {
-                text: 'Login Sekarang',
-                onPress: () => {
-                  setIsSignUp(false);
-                  // Keep email, clear other fields
-                  setPassword('');
-                  setConfirmPassword('');
-                  setUsername('');
-                  setPhoneNumber('');
-                  setFullName('');
-                }
-              }
-            ]
-          );
+          Alert.alert('Success', 'Akun berhasil dibuat!');
+          setIsSignUp(false);
+          // Reset form
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+          setUsername('');
+          setPhoneNumber('');
+          setFullName('');
         }
       } else {
-        const { error } = await signIn(email, password);
+        // Login: gunakan email atau username
+        const identifier = email || username;
+        const { error } = await signIn(identifier, password);
         if (error) {
           Alert.alert('Error', error.message);
         }

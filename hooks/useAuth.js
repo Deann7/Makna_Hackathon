@@ -6,20 +6,22 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
 
-  // Fungsi untuk fetch profile user
-  const fetchProfile = async (userId) => {
+  // Fetch profile by id, username, or email
+  const fetchProfile = async (identifier) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      let query = supabase.from('profiles').select('*');
+      if (identifier?.id) query = query.eq('id', identifier.id);
+      else if (identifier?.username) query = query.eq('username', identifier.username);
+      else if (identifier?.email) query = query.eq('email', identifier.email);
+      else if (typeof identifier === 'string') {
+        // Try as username or email
+        query = query.or(`username.eq.${identifier},email.eq.${identifier}`);
+      }
+      const { data, error } = await query.single();
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
         return null;
       }
-      
       return data;
     } catch (err) {
       console.error('Error in fetchProfile:', err);
@@ -66,56 +68,59 @@ export function useAuth() {
     return () => subscription?.unsubscribe();
   }, []);
 
-  const signIn = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data, error };
-  };
-
-  const signUp = async (email, password, username, phoneNumber, fullName) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username: username,
-          phone_number: phoneNumber,
-          full_name: fullName
-        }
-        // emailRedirectTo dihapus untuk disable email verification
-      }
-    });
-    
-    // Jika registrasi berhasil dan ada user tapi belum confirmed, auto confirm
-    if (data.user && !data.user.email_confirmed_at) {
-      console.log('User registered successfully, no email confirmation required');
-    }
-    
-    return { data, error };
-  };
-
-  const registerUser = async (username, phoneNumber, password, email, fullName) => {
+  // Manual signIn: email/username + password
+  const signIn = async (identifier, password) => {
+    // identifier: email or username
     try {
-      const { data, error } = await supabase.rpc('register_user', {
-        username: username,
-        phone_number: phoneNumber,
-        password: password,
-        email: email,
-        full_name: fullName
-      });
-      
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .or(`username.eq.${identifier},email.eq.${identifier}`)
+        .single();
+      if (error) return { data: null, error };
+      // Password check (plaintext, not recommended for production)
+      if (!data || data.password !== password) {
+        return { data: null, error: { message: 'Username/email atau password salah' } };
+      }
+      setUser(data);
+      setProfile(data);
       return { data, error: null };
-    } catch (error) {
-      return { data: null, error };
+    } catch (err) {
+      return { data: null, error: { message: 'Gagal login' } };
     }
   };
+
+  // Manual signUp: insert ke profiles
+  const signUp = async (email, password, username, phoneNumber, fullName) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          email,
+          password, // plaintext, not recommended for production
+          username,
+          phone_number: phoneNumber,
+          full_name: fullName,
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      if (error) return { data: null, error };
+      setUser(data);
+      setProfile(data);
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: { message: 'Gagal daftar' } };
+    }
+  };
+
+  // registerUser tidak dipakai lagi
+  const registerUser = async () => ({ data: null, error: { message: 'Not implemented' } });
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    setUser(null);
+    setProfile(null);
+    return { error: null };
   };
 
   const updateProfile = async (updates) => {
