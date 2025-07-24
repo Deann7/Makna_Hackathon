@@ -6,7 +6,6 @@ import HomeScreen from './screens/HomeScreen';
 import ExploreScreen from './screens/ExploreScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import ChatbotScreen from './screens/ChatbotScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -17,7 +16,6 @@ export default function TabNavigation() {
   const tabs = [
     { name: 'Home', icon: 'home', iconOutline: 'home-outline', component: HomeScreen, label: 'Beranda' },
     { name: 'Explore', icon: 'compass', iconOutline: 'compass-outline', component: ExploreScreen, label: 'Jelajahi' },
-    { name: 'Chatbot', icon: 'chatbubble-ellipses', iconOutline: 'chatbubble-ellipses-outline', component: ChatbotScreen, label: 'Chatbot' },
     { name: 'History', icon: 'time', iconOutline: 'time-outline', component: HistoryScreen, label: 'Riwayat' },
     { name: 'Profile', icon: 'person', iconOutline: 'person-outline', component: ProfileScreen, label: 'Profil' },
   ];
