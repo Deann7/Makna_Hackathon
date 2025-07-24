@@ -17,7 +17,16 @@ module.exports = {
           700: '#6F4E37',
           800: '#5D4037',
           900: '#3E2723',
-        }
+        },
+        'primary': '#461C07',
+        'secondary': '#FBBF24',
+
+      },
+      fontFamily: {
+        'poppins': ['Poppins_400Regular'],
+        'poppins-medium': ['Poppins_500Medium'],
+        'poppins-semibold': ['Poppins_600SemiBold'],
+        'poppins-bold': ['Poppins_700Bold'],
       }
     },
   },

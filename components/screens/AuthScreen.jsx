@@ -1,75 +1,51 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import { useAuthContext } from '../../contexts/AuthContext';
-import BatikPattern from '../BatikPattern';
 
 export default function AuthScreen() {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState('welcome'); // welcome, signin, register-email, register-info
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Form data
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
-  const { signIn, signUp, registerUser } = useAuthContext();
+  const { signIn, signUp } = useAuthContext();
 
-  const handleAuth = async () => {
-    if ((!email && !username) || !password) {
-      Alert.alert('Error', 'Isi email/username dan password');
+  // Logo SVG Component (simplified version of your icon)
+  const LogoIcon = () => (
+    <Svg width={120} height={120} viewBox="0 0 100 100">
+      <Path
+        d="M20 20h60v60H20z M30 30h40v40H30z M40 40h20v20H40z"
+        fill="#461C07"
+        stroke="#461C07"
+        strokeWidth="2"
+      />
+      <Path
+        d="M35 25 Q50 35 65 25 Q60 40 50 50 Q40 40 35 25z"
+        fill="#461C07"
+      />
+    </Svg>
+  );
+
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
-    if (isSignUp) {
-      if (!username || !phoneNumber || !fullName) {
-        Alert.alert('Error', 'Please fill in all required fields');
-        return;
-      }
-
-      if (username.length < 3) {
-        Alert.alert('Error', 'Username must be at least 3 characters long');
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        Alert.alert('Error', 'Passwords do not match');
-        return;
-      }
-
-      if (password.length < 6) {
-        Alert.alert('Error', 'Password must be at least 6 characters long');
-        return;
-      }
-    }
-
     setLoading(true);
-    
     try {
-      if (isSignUp) {
-        const { data, error } = await signUp(email, password, username, phoneNumber, fullName);
-        if (error) {
-          Alert.alert('Error', error.message);
-        } else {
-          Alert.alert('Success', 'Akun berhasil dibuat!');
-          setIsSignUp(false);
-          // Reset form
-          setEmail('');
-          setPassword('');
-          setConfirmPassword('');
-          setUsername('');
-          setPhoneNumber('');
-          setFullName('');
-        }
-      } else {
-        // Login: gunakan email atau username
-        const identifier = email || username;
-        const { error } = await signIn(identifier, password);
-        if (error) {
-          Alert.alert('Error', error.message);
-        }
+      const { error } = await signIn(email, password);
+      if (error) {
+        Alert.alert('Error', error.message);
       }
     } catch (err) {
       Alert.alert('Error', 'An unexpected error occurred');
@@ -78,191 +54,632 @@ export default function AuthScreen() {
     }
   };
 
-  return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-batik-50"
-    >
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="flex-1 relative min-h-screen">
-          <BatikPattern />
-          
-          {/* Header */}
-          <View className="bg-batik-700 px-4 py-8 rounded-b-3xl relative overflow-hidden">
-            <BatikPattern className="opacity-10" />
-            <View className="items-center relative z-10">
-              <View className="bg-batik-600 w-16 h-16 rounded-full justify-center items-center mb-4">
-                <Ionicons name="library" size={32} color="#F5EFE7" />
-              </View>
-              <Text className="text-batik-100 text-2xl font-bold">MAKNA</Text>
-              <Text className="text-batik-200 text-sm">Jelajahi Cerita Budaya Indonesia</Text>
+  const handleRegisterSubmit = async () => {
+    if (!email || !password || !confirmPassword || !firstName || !lastName) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const username = `${firstName.toLowerCase()}_${lastName.toLowerCase()}`;
+      const fullName = `${firstName} ${lastName}`;
+      
+      const { error } = await signUp(email, password, username, '', fullName);
+      if (error) {
+        Alert.alert('Error', error.message);
+      } else {
+        Alert.alert('Success', 'Account created successfully!');
+        setCurrentScreen('signin');
+        // Reset form
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setFirstName('');
+        setLastName('');
+      }
+    } catch (err) {
+      Alert.alert('Error', 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailSubmit = () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    setCurrentScreen('register-info');
+  };
+
+  // Welcome Screen
+  if (currentScreen === 'welcome') {
+    return (
+      <View className="flex-1 bg-white">
+        <View className="flex-1 justify-center items-center px-6">
+          <View className="mb-8 items-center">
+            <Text 
+              className="text-2xl text-gray-800 mb-6"
+              style={{
+                fontFamily: 'Poppins_400Regular',
+                fontSize: 24,
+                color: '#374151'
+              }}
+            >
+              Welcome to
+            </Text>
+            
+            <View className="mb-8">
+              <LogoIcon />
             </View>
+            
+            <Text 
+              className="text-3xl mb-2"
+              style={{
+                fontFamily: 'Poppins_700Bold',
+                fontSize: 32,
+                color: '#461C07',
+                letterSpacing: 2
+              }}
+            >
+              MAKNA
+            </Text>
           </View>
 
-          {/* Form */}
-          <View className="flex-1 px-6 py-8 relative z-10">
-            <View className="bg-white rounded-2xl p-6 border border-batik-200 shadow-lg">
-              <Text className="text-batik-800 text-xl font-bold text-center mb-6">
-                {isSignUp ? 'Buat Akun Baru' : 'Selamat Datang Kembali'}
+          <View className="w-full max-w-sm space-y-4">
+            <TouchableOpacity
+              onPress={() => setCurrentScreen('register-email')}
+              className="rounded-lg py-4 px-6 shadow-sm"
+              style={{ backgroundColor: '#461C07' }}
+              activeOpacity={0.8}
+            >
+              <Text 
+                className="text-center text-white text-lg"
+                style={{
+                  fontFamily: 'Poppins_500Medium',
+                  fontSize: 18
+                }}
+              >
+                Register
               </Text>
+            </TouchableOpacity>
 
-              {/* Full Name Input (Sign Up only) */}
-              {isSignUp && (
-                <View className="mb-4">
-                  <Text className="text-batik-700 text-sm font-medium mb-2">Nama Lengkap *</Text>
-                  <View className="bg-batik-50 rounded-xl px-4 py-3 border border-batik-200">
-                    <TextInput
-                      className="text-batik-800"
-                      placeholder="Masukkan nama lengkap"
-                      placeholderTextColor="#A0522D"
-                      value={fullName}
-                      onChangeText={setFullName}
-                      autoCapitalize="words"
-                    />
-                  </View>
-                </View>
-              )}
+            <TouchableOpacity
+              onPress={() => setCurrentScreen('signin')}
+              className="border rounded-lg py-4 px-6"
+              style={{ borderColor: '#D1D5DB' }}
+              activeOpacity={0.8}
+            >
+              <Text 
+                className="text-center text-lg"
+                style={{
+                  fontFamily: 'Poppins_500Medium',
+                  fontSize: 18,
+                  color: '#374151'
+                }}
+              >
+                Sign In
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
-              {/* Username Input (Sign Up only) */}
-              {isSignUp && (
-                <View className="mb-4">
-                  <Text className="text-batik-700 text-sm font-medium mb-2">Username *</Text>
-                  <View className="bg-batik-50 rounded-xl px-4 py-3 border border-batik-200">
-                    <TextInput
-                      className="text-batik-800"
-                      placeholder="Minimal 3 karakter"
-                      placeholderTextColor="#A0522D"
-                      value={username}
-                      onChangeText={setUsername}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                  </View>
-                </View>
-              )}
+  // Sign In Screen
+  if (currentScreen === 'signin') {
+    return (
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1 bg-white"
+      >
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          <View className="px-6 pt-12">
+            <TouchableOpacity
+              onPress={() => setCurrentScreen('welcome')}
+              className="mb-6"
+            >
+              <Ionicons name="chevron-back" size={24} color="#374151" />
+            </TouchableOpacity>
 
-              {/* Phone Number Input (Sign Up only) */}
-              {isSignUp && (
-                <View className="mb-4">
-                  <Text className="text-batik-700 text-sm font-medium mb-2">Nomor Telepon *</Text>
-                  <View className="bg-batik-50 rounded-xl px-4 py-3 border border-batik-200">
-                    <TextInput
-                      className="text-batik-800"
-                      placeholder="08xxxxxxxxxx"
-                      placeholderTextColor="#A0522D"
-                      value={phoneNumber}
-                      onChangeText={setPhoneNumber}
-                      keyboardType="phone-pad"
-                    />
-                  </View>
-                </View>
-              )}
+            <View className="mb-8">
+              <Text 
+                className="text-2xl mb-2"
+                style={{
+                  fontFamily: 'Poppins_600SemiBold',
+                  fontSize: 24,
+                  color: '#374151'
+                }}
+              >
+                It's great to have you back!
+              </Text>
+              <Text 
+                className="text-base"
+                style={{
+                  fontFamily: 'Poppins_400Regular',
+                  fontSize: 16,
+                  color: '#6B7280'
+                }}
+              >
+                Sign in and continue your journey
+              </Text>
+            </View>
 
-              {/* Email Input */}
-              <View className="mb-4">
-                <Text className="text-batik-700 text-sm font-medium mb-2">Email *</Text>
-                <View className="bg-batik-50 rounded-xl px-4 py-3 border border-batik-200">
-                  <TextInput
-                    className="text-batik-800"
-                    placeholder="Masukkan email"
-                    placeholderTextColor="#A0522D"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
+            <View className="space-y-4">
+              <View>
+                <Text 
+                  className="text-sm mb-2"
+                  style={{
+                    fontFamily: 'Poppins_400Regular',
+                    fontSize: 14,
+                    color: '#6B7280'
+                  }}
+                >
+                  Email
+                </Text>
+                <TextInput
+                  className="border border-gray-300 rounded-lg px-4 py-3"
+                  style={{
+                    fontFamily: 'Poppins_400Regular',
+                    fontSize: 16,
+                    borderColor: '#D1D5DB'
+                  }}
+                  placeholder=""
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
               </View>
 
-              {/* Password Input */}
-              <View className="mb-4">
-                <Text className="text-batik-700 text-sm font-medium mb-2">Password *</Text>
-                <View className="bg-batik-50 rounded-xl px-4 py-3 border border-batik-200 flex-row items-center">
+              <View>
+                <Text 
+                  className="text-sm mb-2"
+                  style={{
+                    fontFamily: 'Poppins_400Regular',
+                    fontSize: 14,
+                    color: '#6B7280'
+                  }}
+                >
+                  Password
+                </Text>
+                <View className="relative">
                   <TextInput
-                    className="text-batik-800 flex-1"
-                    placeholder={isSignUp ? "Minimal 6 karakter" : "Masukkan password"}
-                    placeholderTextColor="#A0522D"
+                    className="border border-gray-300 rounded-lg px-4 py-3 pr-12"
+                    style={{
+                      fontFamily: 'Poppins_400Regular',
+                      fontSize: 16,
+                      borderColor: '#D1D5DB'
+                    }}
+                    placeholder=""
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-3"
+                  >
                     <Ionicons 
                       name={showPassword ? 'eye-off' : 'eye'} 
                       size={20} 
-                      color="#A0522D" 
+                      color="#6B7280" 
                     />
                   </TouchableOpacity>
                 </View>
               </View>
 
-              {/* Confirm Password (Sign Up only) */}
-              {isSignUp && (
-                <View className="mb-6">
-                  <Text className="text-batik-700 text-sm font-medium mb-2">Konfirmasi Password *</Text>
-                  <View className="bg-batik-50 rounded-xl px-4 py-3 border border-batik-200">
-                    <TextInput
-                      className="text-batik-800"
-                      placeholder="Masukkan ulang password"
-                      placeholderTextColor="#A0522D"
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      secureTextEntry={!showPassword}
-                    />
-                  </View>
-                </View>
-              )}
-
-              {/* Auth Button */}
               <TouchableOpacity
-                onPress={handleAuth}
+                onPress={handleSignIn}
                 disabled={loading}
-                className={`bg-batik-700 rounded-xl py-4 mb-4 shadow-lg ${loading ? 'opacity-50' : ''}`}
+                className="rounded-lg py-4 mt-6"
+                style={{ backgroundColor: '#461C07' }}
+                activeOpacity={0.8}
               >
-                <Text className="text-batik-100 text-center font-bold text-lg">
-                  {loading ? 'Mohon tunggu...' : isSignUp ? 'Daftar Sekarang' : 'Masuk'}
+                <Text 
+                  className="text-center text-white text-lg"
+                  style={{
+                    fontFamily: 'Poppins_500Medium',
+                    fontSize: 18
+                  }}
+                >
+                  {loading ? 'Signing In...' : 'Sign In'}
                 </Text>
               </TouchableOpacity>
 
-              {/* Toggle Mode */}
-              <TouchableOpacity
-                onPress={() => {
-                  setIsSignUp(!isSignUp);
-                  // Reset form when switching
-                  setEmail('');
-                  setPassword('');
-                  setConfirmPassword('');
-                  setUsername('');
-                  setPhoneNumber('');
-                  setFullName('');
-                }}
-                className="items-center"
-              >
-                <Text className="text-batik-600">
-                  {isSignUp ? 'Sudah punya akun? ' : "Belum punya akun? "}
-                  <Text className="text-batik-700 font-bold">
-                    {isSignUp ? 'Masuk di sini' : 'Daftar di sini'}
+              <View className="flex-row justify-between items-center mt-4">
+                <TouchableOpacity onPress={() => setCurrentScreen('register-email')}>
+                  <Text 
+                    style={{
+                      fontFamily: 'Poppins_400Regular',
+                      fontSize: 14,
+                      color: '#6B7280'
+                    }}
+                  >
+                    New user? <Text style={{ color: '#461C07' }}>Register</Text>
                   </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity>
+                  <Text 
+                    style={{
+                      fontFamily: 'Poppins_400Regular',
+                      fontSize: 14,
+                      color: '#461C07'
+                    }}
+                  >
+                    Forgot password?
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View className="flex-row items-center my-6">
+                <View className="flex-1 h-px bg-gray-300" />
+                <Text 
+                  className="mx-4"
+                  style={{
+                    fontFamily: 'Poppins_400Regular',
+                    fontSize: 14,
+                    color: '#6B7280'
+                  }}
+                >
+                  or
+                </Text>
+                <View className="flex-1 h-px bg-gray-300" />
+              </View>
+
+              <TouchableOpacity
+                className="border border-gray-300 rounded-lg py-3 flex-row items-center justify-center"
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-google" size={20} color="#DB4437" />
+                <Text 
+                  className="ml-3"
+                  style={{
+                    fontFamily: 'Poppins_500Medium',
+                    fontSize: 16,
+                    color: '#374151'
+                  }}
+                >
+                  Sign in with google
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="rounded-lg py-3 flex-row items-center justify-center"
+                style={{ backgroundColor: '#000000' }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
+                <Text 
+                  className="ml-3 text-white"
+                  style={{
+                    fontFamily: 'Poppins_500Medium',
+                    fontSize: 16
+                  }}
+                >
+                  Sign in with apple
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
-            {/* Terms and Privacy (Sign Up only) */}
-            {isSignUp && (
-              <View className="mt-4 px-4">
-                <Text className="text-batik-600 text-xs text-center">
-                  Dengan mendaftar, Anda menyetujui{' '}
-                  <Text className="text-batik-700 font-medium">Syarat & Ketentuan</Text>
-                  {' '}dan{' '}
-                  <Text className="text-batik-700 font-medium">Kebijakan Privasi</Text>
-                  {' '}kami
+  // Register Email Screen
+  if (currentScreen === 'register-email') {
+    return (
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1 bg-white"
+      >
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          <View className="px-6 pt-12">
+            <TouchableOpacity
+              onPress={() => setCurrentScreen('welcome')}
+              className="mb-6"
+            >
+              <Ionicons name="chevron-back" size={24} color="#374151" />
+            </TouchableOpacity>
+
+            <View className="mb-8 items-center">
+              <Text 
+                className="text-2xl mb-4 text-center"
+                style={{
+                  fontFamily: 'Poppins_600SemiBold',
+                  fontSize: 24,
+                  color: '#374151'
+                }}
+              >
+                Please provide your email address
+              </Text>
+              <Text 
+                className="text-base text-center"
+                style={{
+                  fontFamily: 'Poppins_400Regular',
+                  fontSize: 16,
+                  color: '#6B7280'
+                }}
+              >
+                We need this information to verify your identity
+              </Text>
+            </View>
+
+            <View className="space-y-6">
+              <View>
+                <TextInput
+                  className="border border-gray-300 rounded-lg px-4 py-3"
+                  style={{
+                    fontFamily: 'Poppins_400Regular',
+                    fontSize: 16,
+                    borderColor: '#D1D5DB'
+                  }}
+                  placeholder="Please enter your email"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+
+              <TouchableOpacity
+                onPress={handleEmailSubmit}
+                className="rounded-lg py-4"
+                style={{ backgroundColor: '#461C07' }}
+                activeOpacity={0.8}
+              >
+                <Text 
+                  className="text-center text-white text-lg"
+                  style={{
+                    fontFamily: 'Poppins_500Medium',
+                    fontSize: 18
+                  }}
+                >
+                  Submit
+                </Text>
+              </TouchableOpacity>
+
+              <View className="flex-row items-center my-6">
+                <View className="flex-1 h-px bg-gray-300" />
+                <Text 
+                  className="mx-4"
+                  style={{
+                    fontFamily: 'Poppins_400Regular',
+                    fontSize: 14,
+                    color: '#6B7280'
+                  }}
+                >
+                  or
+                </Text>
+                <View className="flex-1 h-px bg-gray-300" />
+              </View>
+
+              <TouchableOpacity
+                className="border border-gray-300 rounded-lg py-3 flex-row items-center justify-center"
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-google" size={20} color="#DB4437" />
+                <Text 
+                  className="ml-3"
+                  style={{
+                    fontFamily: 'Poppins_500Medium',
+                    fontSize: 16,
+                    color: '#374151'
+                  }}
+                >
+                  Register with google
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="rounded-lg py-3 flex-row items-center justify-center"
+                style={{ backgroundColor: '#000000' }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
+                <Text 
+                  className="ml-3 text-white"
+                  style={{
+                    fontFamily: 'Poppins_500Medium',
+                    fontSize: 16
+                  }}
+                >
+                  Register with apple
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // Register Info Screen
+  if (currentScreen === 'register-info') {
+    return (
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1 bg-white"
+      >
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          <View className="px-6 pt-12">
+            <TouchableOpacity
+              onPress={() => setCurrentScreen('register-email')}
+              className="mb-6"
+            >
+              <Ionicons name="chevron-back" size={24} color="#374151" />
+            </TouchableOpacity>
+
+            <View className="mb-8">
+              <Text 
+                className="text-2xl mb-2"
+                style={{
+                  fontFamily: 'Poppins_600SemiBold',
+                  fontSize: 24,
+                  color: '#374151'
+                }}
+              >
+                It's a pleasure to meet you!
+              </Text>
+              <Text 
+                className="text-base"
+                style={{
+                  fontFamily: 'Poppins_400Regular',
+                  fontSize: 16,
+                  color: '#6B7280'
+                }}
+              >
+                Sign up and get started
+              </Text>
+            </View>
+
+            <View className="space-y-4">
+              <View>
+                <TextInput
+                  className="border border-gray-300 rounded-lg px-4 py-3"
+                  style={{
+                    fontFamily: 'Poppins_400Regular',
+                    fontSize: 16,
+                    borderColor: '#D1D5DB'
+                  }}
+                  placeholder="Please enter your first name"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View>
+                <TextInput
+                  className="border border-gray-300 rounded-lg px-4 py-3"
+                  style={{
+                    fontFamily: 'Poppins_400Regular',
+                    fontSize: 16,
+                    borderColor: '#D1D5DB'
+                  }}
+                  placeholder="Please enter your last name"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View>
+                <View className="relative">
+                  <TextInput
+                    className="border border-gray-300 rounded-lg px-4 py-3 pr-12"
+                    style={{
+                      fontFamily: 'Poppins_400Regular',
+                      fontSize: 16,
+                      borderColor: '#D1D5DB'
+                    }}
+                    placeholder="Please enter your password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-3"
+                  >
+                    <Ionicons 
+                      name={showPassword ? 'eye-off' : 'eye'} 
+                      size={20} 
+                      color="#6B7280" 
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View>
+                <View className="relative">
+                  <TextInput
+                    className="border border-gray-300 rounded-lg px-4 py-3 pr-12"
+                    style={{
+                      fontFamily: 'Poppins_400Regular',
+                      fontSize: 16,
+                      borderColor: '#D1D5DB'
+                    }}
+                    placeholder="Confirmation password"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-3"
+                  >
+                    <Ionicons 
+                      name={showConfirmPassword ? 'eye-off' : 'eye'} 
+                      size={20} 
+                      color="#6B7280" 
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={handleRegisterSubmit}
+                disabled={loading}
+                className="rounded-lg py-4 mt-6"
+                style={{ backgroundColor: '#461C07' }}
+                activeOpacity={0.8}
+              >
+                <Text 
+                  className="text-center text-white text-lg"
+                  style={{
+                    fontFamily: 'Poppins_500Medium',
+                    fontSize: 18
+                  }}
+                >
+                  {loading ? 'Creating Account...' : 'Register'}
+                </Text>
+              </TouchableOpacity>
+
+              <View className="flex-row items-center justify-center mt-4">
+                <Ionicons name="checkmark-circle" size={16} color="#461C07" />
+                <Text 
+                  className="ml-2 text-sm"
+                  style={{
+                    fontFamily: 'Poppins_400Regular',
+                    fontSize: 12,
+                    color: '#6B7280'
+                  }}
+                >
+                  By clicking "Agree," you accept the{' '}
+                  <Text style={{ color: '#3B82F6' }}>terms</Text> and{' '}
+                  <Text style={{ color: '#3B82F6' }}>conditions</Text>.
                 </Text>
               </View>
-            )}
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  return null;
 }
