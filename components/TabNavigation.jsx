@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Text, Dimensions, Modal, Alert, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, TouchableOpacity, Text, Modal, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HomeIcon, HomeIcon2, MapIcon, MapIcon2, LeaderboardIcon, LeaderboardIcon2, ProfileIcon, ProfileIcon2, ScannerIcon } from './IconBar';
 import HomeScreen from './screens/HomeScreen';
 import ExploreScreen from './screens/ExploreScreen';
 import HistoryScreen from './screens/HistoryScreen';
@@ -10,8 +10,6 @@ import QRScannerScreen from './screens/QRScannerScreen';
 import TripProgressScreen from './screens/TripProgressScreen';
 import TestQRData from './TestQRData';
 import TestAuthFlow from './TestAuthFlow';
-
-const { width } = Dimensions.get('window');
 
 export default function TabNavigation() {
   const [activeTab, setActiveTab] = useState('Home');
@@ -23,10 +21,37 @@ export default function TabNavigation() {
   const insets = useSafeAreaInsets();
 
   const tabs = [
-    { name: 'Home', icon: 'home', iconOutline: 'home-outline', component: HomeScreen, label: 'Beranda' },
-    { name: 'Explore', icon: 'compass', iconOutline: 'compass-outline', component: ExploreScreen, label: 'Jelajahi' },
-    { name: 'History', icon: 'time', iconOutline: 'time-outline', component: HistoryScreen, label: 'Riwayat' },
-    { name: 'Profile', icon: 'person', iconOutline: 'person-outline', component: ProfileScreen, label: 'Profil' },
+    { 
+      name: 'Home', 
+      icon: (active) => active ? <HomeIcon2 color="#461C07" size={24} /> : <HomeIcon color="#9CA3AF" size={24} />,
+      component: HomeScreen, 
+      label: 'Home' 
+    },
+    { 
+      name: 'Map', 
+      icon: (active) => active ? <MapIcon2 color="#461C07" size={24} /> : <MapIcon color="#9CA3AF" size={24} />,
+      component: ExploreScreen, 
+      label: 'Map' 
+    },
+    { 
+      name: 'QR', 
+      icon: (active) => <ScannerIcon color="#FFFFFF" size={32} />,
+      component: null, 
+      label: 'QR', 
+      isCenter: true 
+    },
+    { 
+      name: 'Leaderboard', 
+      icon: (active) => active ? <LeaderboardIcon2 color="#461C07" size={24} /> : <LeaderboardIcon color="#9CA3AF" size={24} />,
+      component: HistoryScreen, 
+      label: 'Leaderboard' 
+    },
+    { 
+      name: 'Profile', 
+      icon: (active) => active ? <ProfileIcon2 color="#461C07" size={24} /> : <ProfileIcon color="#9CA3AF" size={24} />,
+      component: ProfileScreen, 
+      label: 'Profile' 
+    },
   ];
 
   const handleTripStart = (tripData) => {
@@ -37,13 +62,17 @@ export default function TabNavigation() {
   const handleTripComplete = (badgeData) => {
     setShowTripProgress(false);
     setActiveTripData(null);
-    // Could show badge earned screen here
-    setActiveTab('Home'); // Return to home to see updated data
+    setActiveTab('Home');
+  };
+
+  const handleQRPress = () => {
+    setShowQRScanner(true);
   };
 
   const renderContent = () => {
-    const ActiveComponent = tabs.find(tab => tab.name === activeTab)?.component;
-    if (ActiveComponent) {
+    const activeTabData = tabs.find(tab => tab.name === activeTab);
+    if (activeTabData?.component) {
+      const ActiveComponent = activeTabData.component;
       const props = { onTripStart: handleTripStart };
       if (activeTab === 'Profile') {
         props.onShowTestAuth = () => setShowTestAuth(true);
@@ -54,87 +83,64 @@ export default function TabNavigation() {
   };
 
   return (
-    <View className="flex-1">
+    <View className="flex-1 bg-white">
       {/* Main Content */}
       <View className="flex-1">
         {renderContent()}
       </View>
 
-      {/* Floating QR Scanner Button */}
-      <TouchableOpacity
-        onPress={() => {
-          Alert.alert(
-            'Scan QR Code',
-            'Pilih metode untuk memulai perjalanan',
-            [
-              { text: 'Batal', style: 'cancel' },
-              { text: 'Test QR', onPress: () => setShowTestQR(true) },
-              { text: 'Scan Kamera', onPress: () => setShowQRScanner(true) }
-            ]
-          );
-        }}
-        className="absolute bottom-20 right-6 bg-batik-600 w-14 h-14 rounded-full justify-center items-center shadow-lg"
-        style={{
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8,
-        }}
-      >
-        <Ionicons name="qr-code" size={28} color="#F5EFE7" />
-      </TouchableOpacity>
-
       {/* Bottom Tab Bar */}
       <View 
-        className="bg-white border-t border-batik-200 px-2"
+        className="bg-white border-t border-gray-200"
         style={{ 
           paddingBottom: Math.max(insets.bottom, 10),
           paddingTop: 10
         }}
       >
-        {/* Batik-inspired decorative line */}
-        <View className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-batik-600 via-batik-500 to-batik-400" />
-        
         <View className="flex-row justify-around items-center">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.name;
-            const tabWidth = width / tabs.length;
             
             return (
               <TouchableOpacity
                 key={tab.name}
-                onPress={() => setActiveTab(tab.name)}
-                className="items-center py-2 px-1"
-                style={{ width: tabWidth }}
+                onPress={() => {
+                  if (tab.isCenter) {
+                    handleQRPress();
+                  } else {
+                    setActiveTab(tab.name);
+                  }
+                }}
+                className="items-center"
+                style={{ 
+                  flex: 1,
+                  paddingVertical: tab.isCenter ? 0 : 4
+                }}
                 activeOpacity={0.7}
               >
-                {/* Tab Background with Batik Pattern Effect */}
-                {isActive && (
-                  <View className="absolute top-0 bg-batik-50 rounded-xl w-full h-full border border-batik-200" />
-                )}
-                
-                {/* Icon Container */}
-                <View className={`items-center justify-center w-8 h-8 rounded-lg ${
-                  isActive ? 'bg-batik-600' : 'bg-transparent'
-                }`}>
-                  <Ionicons
-                    name={isActive ? tab.icon : tab.iconOutline}
-                    size={isActive ? 22 : 20}
-                    color={isActive ? '#F5EFE7' : '#6F4E37'}
-                  />
-                </View>
-
-                {/* Label */}
-                <Text className={`text-xs font-medium mt-1 ${
-                  isActive ? 'text-batik-700' : 'text-batik-500'
-                }`}>
-                  {tab.label}
-                </Text>
-
-                {/* Active Indicator Dot */}
-                {isActive && (
-                  <View className="w-1 h-1 bg-batik-600 rounded-full mt-1" />
+                {tab.isCenter ? (
+                  <View 
+                    className="bg-[#461C07] rounded-full w-16 h-16 items-center justify-center -mt-8"
+                  >
+                    <View className="w-8 h-8">
+                      {tab.icon(false)}
+                    </View>
+                  </View>
+                ) : (
+                  <>
+                    <View className="h-6 mb-1">
+                      {tab.icon(isActive)}
+                    </View>
+                    <Text 
+                      className="text-xs"
+                      style={{
+                        fontFamily: 'Poppins_400Regular',
+                        color: isActive ? "#461C07" : "#9CA3AF"
+                      }}
+                    >
+                      {tab.label}
+                    </Text>
+                  </>
                 )}
               </TouchableOpacity>
             );
@@ -142,7 +148,7 @@ export default function TabNavigation() {
         </View>
       </View>
 
-      {/* QR Scanner Modal */}
+      {/* Modals */}
       <Modal
         visible={showQRScanner}
         animationType="slide"
@@ -154,7 +160,6 @@ export default function TabNavigation() {
         />
       </Modal>
 
-      {/* Trip Progress Modal */}
       <Modal
         visible={showTripProgress}
         animationType="slide"
@@ -169,7 +174,6 @@ export default function TabNavigation() {
         )}
       </Modal>
 
-      {/* Test QR Modal */}
       <Modal
         visible={showTestQR}
         animationType="slide"
@@ -181,7 +185,6 @@ export default function TabNavigation() {
         />
       </Modal>
 
-      {/* Test Auth Modal */}
       <Modal
         visible={showTestAuth}
         animationType="slide"

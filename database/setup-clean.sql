@@ -12,7 +12,6 @@ CREATE TABLE public.profiles (
   firstname text NOT NULL,
   lastname text NOT NULL,
   password text NOT NULL,
-  username text UNIQUE CHECK (char_length(username) >= 3),
   avatar_url text,
   phone_number text,
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
@@ -33,7 +32,7 @@ CREATE POLICY "Enable insert for authentication" ON public.profiles FOR INSERT W
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, firstname, lastname, password, username)
+  INSERT INTO public.profiles (id, email, firstname, lastname, password)
   VALUES (
     NEW.id,
     NEW.email,

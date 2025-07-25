@@ -5,7 +5,6 @@ import TabNavigation from '../components/TabNavigation';
 import SplashScreen from '../components/SplashScreen';
 import LoadingScreen from '../components/LoadingScreen';
 import AuthScreen from '../components/screens/AuthScreen';
-import FloatingChatButton from '../components/FloatingChatButton';
 import { useAuthContext } from '../contexts/AuthContext';
 
 export default function Home() {
@@ -55,7 +54,6 @@ export default function Home() {
       <StatusBar style="light" backgroundColor="#6F4E37" />
       <View style={{ flex: 1 }}>
         <TabNavigation />
-        <FloatingChatButton />
       </View>
     </>
   );
