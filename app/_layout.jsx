@@ -4,6 +4,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
+import Chatbot from '../components/Chatbot';
 import { View, StyleSheet, Modal, Pressable, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import "../global.css"
@@ -41,61 +42,15 @@ export default function RootLayout() {
             }} 
           />
         </Stack>
-        {/* Floating Chatbot Button & Modal */}
-        <ChatbotPopup />
+        {/* Chatbot di atas TabNavigation */}
+        <View style={{ position: 'absolute', right: '4%', bottom: '12%', zIndex: 10000 }}>
+          <Chatbot />
+        </View>
       </AuthProvider>
     </ErrorBoundary>
   );
 
-// Komponen ChatbotPopup harus di luar RootLayout agar tidak error sintaks
-function ChatbotPopup() {
-  const [visible, setVisible] = useState(false);
-  const chatbotUrl = 'https://www.jotform.com/app/252044483767463';
-
-  return (
-    <>
-      <Pressable
-        style={styles.fab}
-        onPress={() => setVisible(true)}
-        accessibilityLabel="Open Chatbot"
-      >
-        <View style={styles.fabCircle}>
-          <View style={styles.fabDot} />
-        </View>
-      </Pressable>
-      <Modal
-        visible={visible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Pressable style={styles.closeButton} onPress={() => setVisible(false)}>
-              <View style={styles.closeBar} />
-            </Pressable>
-            {Platform.OS === 'web' ? (
-              <iframe
-                src={chatbotUrl}
-                title="Chatbot AI"
-                style={{ width: '100%', height: '100%', border: 'none', borderRadius: 12 }}
-                allow="clipboard-write; microphone"
-              />
-            ) : (
-              <WebView
-                source={{ uri: chatbotUrl }}
-                style={{ flex: 1, borderRadius: 12 }}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                startInLoadingState={true}
-              />
-            )}
-          </View>
-        </View>
-      </Modal>
-    </>
-  );
-}
+// ...existing code...
 }
 
 
