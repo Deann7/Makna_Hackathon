@@ -20,34 +20,55 @@ export default function QRScannerScreen({ onSitusFound, onClose }) {
       };
       getCameraPermissions();
     }
+
+    // Debug: Load all situs data when component mounts
+    const loadAllSitusData = async () => {
+      console.log('🔍 Loading all situs data for debugging...');
+      try {
+        const result = await TripService.getAllSitusData();
+        if (result.success) {
+          console.log('📊 Situs data loaded successfully');
+        } else {
+          console.log('❌ Failed to load situs data:', result.error);
+        }
+      } catch (error) {
+        console.log('❌ Error loading situs data:', error);
+      }
+    };
+
+    loadAllSitusData();
   }, []);
 
   const handleBarCodeScanned = async ({ type, data }) => {
     if (scanned || loading) return;
     
+    console.log('🔍 QR Code scanned:', data);
     setScanned(true);
     setLoading(true);
 
     try {
       // Find situs by QR code
+      console.log('🔎 Searching for situs with QR code:', data);
       const result = await TripService.findSitusByQRCode(data);
       
       if (!result.success) {
+        console.log('❌ QR Code not found:', result.error);
         Alert.alert(
-          'QR Code Tidak Valid',
-          result.error || 'QR code yang Anda scan tidak ditemukan dalam sistem.',
-          [{ text: 'OK', onPress: () => setScanned(false) }]
+          '❌ QR Code Tidak Valid',
+          result.error || 'QR code yang Anda scan tidak ditemukan dalam sistem MAKNA Heritage.\n\n💡 Pastikan Anda scan QR code yang valid dari situs bersejarah yang terdaftar.',
+          [{ text: 'Coba Lagi', onPress: () => setScanned(false) }]
         );
         setLoading(false);
         return;
       }
 
       const situsInfo = result.data;
+      console.log('✅ Situs found:', situsInfo.nama_situs);
 
       // Show confirmation before showing situs details
       Alert.alert(
-        'Situs Ditemukan!',
-        `${situsInfo.nama_situs}\n\nLokasi: ${situsInfo.lokasi_daerah}\nEstimasi durasi: ${situsInfo.estimated_duration_minutes} menit\n\nApakah Anda ingin melihat detail situs ini?`,
+        '🏛️ Situs Bersejarah Ditemukan!',
+        `${situsInfo.nama_situs}\n📍 ${situsInfo.lokasi_daerah}\n⏱️ Estimasi durasi: ${situsInfo.estimated_duration_minutes} menit\n🏛️ ${situsInfo.bangunan_count?.[0]?.count || 0} bangunan untuk dijelajahi\n\n✨ Mulai petualangan sejarah Anda sekarang!`,
         [
           {
             text: 'Batal',
@@ -58,7 +79,7 @@ export default function QRScannerScreen({ onSitusFound, onClose }) {
             }
           },
           {
-            text: 'Lihat Detail',
+            text: '🚀 Mulai Jelajahi',
             onPress: () => {
               setLoading(false);
               onSitusFound(situsInfo);
@@ -132,9 +153,27 @@ export default function QRScannerScreen({ onSitusFound, onClose }) {
           </View>
 
           <View className="bg-yellow-100 rounded-xl p-4 mb-4">
-            <Text className="text-yellow-800 font-bold mb-2">Available Test QR Codes:</Text>
-            <Text className="text-yellow-700 text-sm">• BOROBUDUR_QR_2024</Text>
-            <Text className="text-yellow-700 text-sm">• PRAMBANAN_QR_2024</Text>
+            <Text className="text-yellow-800 font-bold mb-2">🎯 QR Codes Tersedia untuk Testing:</Text>
+            <View className="space-y-1">
+              <View className="flex-row items-center">
+                <Text className="text-yellow-700 text-sm mr-2">🏛️</Text>
+                <Text className="text-yellow-700 text-sm font-medium">BOROBUDUR_QR_2024</Text>
+                <Text className="text-yellow-600 text-xs ml-2">(QR Code Data)</Text>
+              </View>
+              <View className="flex-row items-center">
+                <Text className="text-yellow-700 text-sm mr-2">🏛️</Text>
+                <Text className="text-yellow-700 text-sm font-medium">PRAMBANAN_QR_2024</Text>
+                <Text className="text-yellow-600 text-xs ml-2">(QR Code Data)</Text>
+              </View>
+            </View>
+            <View className="mt-2 p-2 bg-yellow-50 rounded">
+              <Text className="text-yellow-700 text-xs">
+                UID Borobudur: bc28eb34-ddae-4504-932d-7d45efda169e
+              </Text>
+              <Text className="text-yellow-700 text-xs">
+                UID Prambanan: b862f681-baa9-4406-a303-8fad75ef480a
+              </Text>
+            </View>
           </View>
 
           <TouchableOpacity
@@ -142,9 +181,10 @@ export default function QRScannerScreen({ onSitusFound, onClose }) {
               setManualQRInput('BOROBUDUR_QR_2024');
               setTimeout(() => handleManualQRSubmit(), 100);
             }}
-            className="bg-green-500 py-3 rounded-lg mb-3"
+            className="bg-amber-500 py-3 rounded-lg mb-3 flex-row items-center justify-center"
           >
-            <Text className="text-white font-bold text-center">Lihat Detail: Borobudur</Text>
+            <Text className="text-white text-sm mr-2">🏛️</Text>
+            <Text className="text-white font-bold text-center">Test: Candi Borobudur (QR Code)</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -152,9 +192,34 @@ export default function QRScannerScreen({ onSitusFound, onClose }) {
               setManualQRInput('PRAMBANAN_QR_2024');
               setTimeout(() => handleManualQRSubmit(), 100);
             }}
-            className="bg-green-500 py-3 rounded-lg"
+            className="bg-purple-500 py-3 rounded-lg mb-3 flex-row items-center justify-center"
           >
-            <Text className="text-white font-bold text-center">Lihat Detail: Prambanan</Text>
+            <Text className="text-white text-sm mr-2">🏛️</Text>
+            <Text className="text-white font-bold text-center">Test: Candi Prambanan (QR Code)</Text>
+          </TouchableOpacity>
+
+          <Text className="text-batik-800 text-sm font-bold mb-2 mt-4">🔍 Test dengan UID Langsung:</Text>
+
+          <TouchableOpacity
+            onPress={() => {
+              setManualQRInput('bc28eb34-ddae-4504-932d-7d45efda169e');
+              setTimeout(() => handleManualQRSubmit(), 100);
+            }}
+            className="bg-green-600 py-3 rounded-lg mb-3 flex-row items-center justify-center"
+          >
+            <Text className="text-white text-sm mr-2">🆔</Text>
+            <Text className="text-white font-bold text-center">Test: Borobudur (UID)</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              setManualQRInput('b862f681-baa9-4406-a303-8fad75ef480a');
+              setTimeout(() => handleManualQRSubmit(), 100);
+            }}
+            className="bg-green-600 py-3 rounded-lg flex-row items-center justify-center"
+          >
+            <Text className="text-white text-sm mr-2">🆔</Text>
+            <Text className="text-white font-bold text-center">Test: Prambanan (UID)</Text>
           </TouchableOpacity>
         </View>
 

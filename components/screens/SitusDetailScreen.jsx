@@ -9,7 +9,11 @@ export default function SitusDetailScreen({ situs, onClose, onStartTrip }) {
   const [showOverview, setShowOverview] = useState(false);
   const [showTrivia, setShowTrivia] = useState(false);
 
+  // Debug log untuk memastikan data situs diterima dengan benar
+  console.log('📍 SitusDetailScreen received situs data:', situs);
+
   const handleStartGameJourney = () => {
+    console.log('🚀 Starting game journey for:', situs.nama_situs);
     setShowOverview(true);
   };
 
