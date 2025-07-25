@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { TripService } from '../../lib/tripService';
 
-export default function QRScannerScreen({ onTripStart, onClose }) {
+export default function QRScannerScreen({ onSitusFound, onClose }) {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -29,25 +29,25 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
     setLoading(true);
 
     try {
-      // Validate QR code first
-      const validationResult = await TripService.validateQRCode(data);
+      // Find situs by QR code
+      const result = await TripService.findSitusByQRCode(data);
       
-      if (!validationResult.success) {
+      if (!result.success) {
         Alert.alert(
           'QR Code Tidak Valid',
-          'QR code yang Anda scan tidak ditemukan dalam sistem.',
+          result.error || 'QR code yang Anda scan tidak ditemukan dalam sistem.',
           [{ text: 'OK', onPress: () => setScanned(false) }]
         );
         setLoading(false);
         return;
       }
 
-      const situsInfo = validationResult.data;
+      const situsInfo = result.data;
 
-      // Show confirmation before starting trip
+      // Show confirmation before showing situs details
       Alert.alert(
-        'Memulai Perjalanan',
-        `Apakah Anda ingin memulai perjalanan di ${situsInfo.nama_situs}?\n\nLokasi: ${situsInfo.lokasi_daerah}\nEstimasi: ${situsInfo.estimated_duration_minutes} menit`,
+        'Situs Ditemukan!',
+        `${situsInfo.nama_situs}\n\nLokasi: ${situsInfo.lokasi_daerah}\nEstimasi durasi: ${situsInfo.estimated_duration_minutes} menit\n\nApakah Anda ingin melihat detail situs ini?`,
         [
           {
             text: 'Batal',
@@ -58,8 +58,12 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
             }
           },
           {
-            text: 'Mulai',
-            onPress: () => startTrip(data)
+            text: 'Lihat Detail',
+            onPress: () => {
+              setLoading(false);
+              onSitusFound(situsInfo);
+              onClose();
+            }
           }
         ]
       );
@@ -78,47 +82,6 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
     handleBarCodeScanned({ type: 'qr', data: manualQRInput.trim() });
   };
 
-  const startTrip = async (qrCodeData) => {
-    try {
-      const result = await TripService.startTrip(user.id, qrCodeData);
-      
-      if (result.success) {
-        const { trip_uid, situs_info, total_buildings } = result.data;
-        
-        Alert.alert(
-          'Perjalanan Dimulai!',
-          `Selamat datang di ${situs_info.nama_situs}!\n\nAnda akan mengunjungi ${total_buildings} bangunan bersejarah.`,
-          [
-            {
-              text: 'Mulai Jelajahi',
-              onPress: () => {
-                onTripStart({
-                  tripId: trip_uid,
-                  situsInfo: situs_info,
-                  totalBuildings: total_buildings
-                });
-                onClose();
-              }
-            }
-          ]
-        );
-      } else {
-        Alert.alert(
-          'Gagal Memulai Perjalanan',
-          result.error.includes('already has an active trip') 
-            ? 'Anda sudah memiliki perjalanan aktif untuk situs ini.' 
-            : result.error,
-          [{ text: 'OK', onPress: () => setScanned(false) }]
-        );
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Terjadi kesalahan saat memulai perjalanan');
-      setScanned(false);
-    }
-    
-    setLoading(false);
-  };
-
   // Web version - Manual QR input
   if (Platform.OS === 'web') {
     return (
@@ -129,7 +92,7 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
             <TouchableOpacity onPress={onClose} className="bg-batik-600 p-2 rounded-full">
               <Ionicons name="close" size={24} color="#F5EFE7" />
             </TouchableOpacity>
-            <Text className="text-batik-100 text-lg font-bold">QR Code Input (Web)</Text>
+            <Text className="text-batik-100 text-lg font-bold">QR Scanner - Situs Details</Text>
             <View className="w-10" />
           </View>
         </View>
@@ -141,7 +104,7 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
               <Text className="text-blue-800 font-bold ml-2">Web Version</Text>
             </View>
             <Text className="text-blue-700 text-sm mt-2">
-              Camera scanning tidak tersedia di web. Masukkan kode QR secara manual atau gunakan Test QR codes yang tersedia.
+              Camera scanning tidak tersedia di web. Masukkan kode QR secara manual untuk melihat detail situs bersejarah.
             </Text>
           </View>
 
@@ -163,7 +126,7 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
               className="bg-batik-600 py-3 rounded-lg"
             >
               <Text className="text-white font-bold text-center">
-                {loading ? 'Memproses...' : 'Submit QR Code'}
+                {loading ? 'Memproses...' : 'Lihat Detail Situs'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -181,7 +144,7 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
             }}
             className="bg-green-500 py-3 rounded-lg mb-3"
           >
-            <Text className="text-white font-bold text-center">Quick Test: Borobudur</Text>
+            <Text className="text-white font-bold text-center">Lihat Detail: Borobudur</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -191,7 +154,7 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
             }}
             className="bg-green-500 py-3 rounded-lg"
           >
-            <Text className="text-white font-bold text-center">Quick Test: Prambanan</Text>
+            <Text className="text-white font-bold text-center">Lihat Detail: Prambanan</Text>
           </TouchableOpacity>
         </View>
 
@@ -245,7 +208,7 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
           <TouchableOpacity onPress={onClose} className="bg-white/20 p-2 rounded-full">
             <Ionicons name="close" size={24} color="white" />
           </TouchableOpacity>
-          <Text className="text-white font-bold text-lg">Scan QR Code</Text>
+          <Text className="text-white font-bold text-lg">Scan QR Code Situs</Text>
           <View className="w-10" />
         </View>
       </View>
@@ -283,7 +246,7 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
             Arahkan kamera ke QR Code
           </Text>
           <Text className="text-white/80 text-center mt-1">
-            Posisikan QR code di dalam frame untuk memulai perjalanan situs bersejarah
+            Posisikan QR code di dalam frame untuk melihat detail situs bersejarah
           </Text>
         </View>
       </View>

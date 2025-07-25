@@ -8,6 +8,7 @@ import HistoryScreen from './screens/HistoryScreen';
 import LeaderboardScreen from './screens/LeaderboardScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import QRScannerScreen from './screens/QRScannerScreen';
+import SitusDetailScreen from './screens/SitusDetailScreen';
 import TripProgressScreen from './screens/TripProgressScreen';
 import TestQRData from './TestQRData';
 import TestAuthFlow from './TestAuthFlow';
@@ -15,6 +16,8 @@ import TestAuthFlow from './TestAuthFlow';
 export default function TabNavigation() {
   const [activeTab, setActiveTab] = useState('Home');
   const [showQRScanner, setShowQRScanner] = useState(false);
+  const [showSitusDetail, setShowSitusDetail] = useState(false);
+  const [selectedSitus, setSelectedSitus] = useState(null);
   const [showTestQR, setShowTestQR] = useState(false);
   const [showTestAuth, setShowTestAuth] = useState(false);
   const [activeTripData, setActiveTripData] = useState(null);
@@ -68,6 +71,16 @@ export default function TabNavigation() {
 
   const handleQRPress = () => {
     setShowQRScanner(true);
+  };
+
+  const handleSitusFound = (situsData) => {
+    setSelectedSitus(situsData);
+    setShowSitusDetail(true);
+  };
+
+  const handleCloseSitusDetail = () => {
+    setShowSitusDetail(false);
+    setSelectedSitus(null);
   };
 
   const renderContent = () => {
@@ -156,7 +169,7 @@ export default function TabNavigation() {
         onRequestClose={() => setShowQRScanner(false)}
       >
         <QRScannerScreen
-          onTripStart={handleTripStart}
+          onSitusFound={handleSitusFound}
           onClose={() => setShowQRScanner(false)}
         />
       </Modal>
@@ -171,6 +184,19 @@ export default function TabNavigation() {
             tripData={activeTripData}
             onTripComplete={handleTripComplete}
             onClose={() => setShowTripProgress(false)}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        visible={showSitusDetail}
+        animationType="slide"
+        onRequestClose={handleCloseSitusDetail}
+      >
+        {selectedSitus && (
+          <SitusDetailScreen
+            situs={selectedSitus}
+            onClose={handleCloseSitusDetail}
           />
         )}
       </Modal>

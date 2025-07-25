@@ -226,75 +226,7 @@ export default function SitusDetailScreen({ situs, onClose, onStartTrip }) {
             </Text>
           </View>
 
-          {/* Game Journey Section */}
-          <View className="mb-8">
-            <Text 
-              className="text-lg font-bold mb-4"
-              style={{
-                fontFamily: 'Poppins_600SemiBold',
-                fontSize: 18,
-                color: '#1F2937'
-              }}
-            >
-              Educational Journey
-            </Text>
-            
-            <View className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 mb-4">
-              <View className="flex-row items-center mb-4">
-                <View className="bg-amber-200 rounded-full p-3 mr-4">
-                  <Ionicons name="school-outline" size={24} color="#D97706" />
-                </View>
-                <View className="flex-1">
-                  <Text 
-                    className="text-lg font-bold"
-                    style={{
-                      fontFamily: 'Poppins_600SemiBold',
-                      fontSize: 18,
-                      color: '#92400E'
-                    }}
-                  >
-                    Interactive Learning Experience
-                  </Text>
-                  <Text 
-                    className="text-sm"
-                    style={{
-                      fontFamily: 'Poppins_400Regular',
-                      color: '#A16207'
-                    }}
-                  >
-                    Learn through overview and trivia questions
-                  </Text>
-                </View>
-              </View>
-              
-              <Text 
-                className="text-sm mb-4"
-                style={{
-                  fontFamily: 'Poppins_400Regular',
-                  color: '#92400E'
-                }}
-              >
-                Explore the rich history and cultural significance through our interactive journey. Complete the trivia with at least 3 correct answers out of 5 to earn your heritage badge!
-              </Text>
 
-              <TouchableOpacity
-                onPress={handleStartGameJourney}
-                className="bg-amber-600 rounded-xl py-3 px-4 flex-row items-center justify-center"
-                activeOpacity={0.8}
-              >
-                <Ionicons name="play-circle-outline" size={20} color="#FFFFFF" />
-                <Text 
-                  className="ml-2 text-white font-semibold"
-                  style={{
-                    fontFamily: 'Poppins_600SemiBold',
-                    fontSize: 16
-                  }}
-                >
-                  Mulai Perjalanan Edukatif
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
 
           {/* Features List */}
           <View className="mb-8">
@@ -336,16 +268,16 @@ export default function SitusDetailScreen({ situs, onClose, onStartTrip }) {
         </View>
       </ScrollView>
 
-      {/* Bottom Action Button - Physical Trip */}
+      {/* Bottom Action Button */}
       <View className="px-6 py-4 border-t border-gray-200">
         <TouchableOpacity
-          onPress={onStartTrip}
-          className="rounded-xl py-4 mb-3"
+          onPress={handleStartGameJourney}
+          className="rounded-xl py-4"
           style={{ backgroundColor: '#461C07' }}
           activeOpacity={0.8}
         >
           <View className="flex-row items-center justify-center">
-            <Ionicons name="qr-code-outline" size={20} color="#FFFFFF" />
+            <Ionicons name="play-circle-outline" size={20} color="#FFFFFF" />
             <Text 
               className="ml-2 text-center text-white text-lg font-medium"
               style={{
@@ -353,20 +285,10 @@ export default function SitusDetailScreen({ situs, onClose, onStartTrip }) {
                 fontSize: 18
               }}
             >
-              Mulai Perjalanan Fisik (QR)
+              Mulai Pertualangan
             </Text>
           </View>
         </TouchableOpacity>
-        
-        <Text 
-          className="text-xs text-center"
-          style={{
-            fontFamily: 'Poppins_400Regular',
-            color: '#9CA3AF'
-          }}
-        >
-          Scan QR code di lokasi untuk memulai perjalanan fisik
-        </Text>
       </View>
 
       {/* Overview Modal */}
