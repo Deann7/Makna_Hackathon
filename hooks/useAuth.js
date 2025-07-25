@@ -77,7 +77,9 @@ export function useAuth() {
   // Sign in with Supabase Auth
   const signIn = async (email, password) => {
     try {
-      // Clear any existing session first
+      console.log('🔄 Starting sign in process...');
+      
+      // Clear any existing session first to avoid refresh token issues
       await supabase.auth.signOut();
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -87,59 +89,159 @@ export function useAuth() {
       
       if (error) {
         console.error('SignIn error:', error);
+        
+        // Provide more specific error messages
+        if (error.message.includes('Invalid login credentials')) {
+          return { 
+            data: null, 
+            error: { 
+              message: 'Email atau password salah. Pastikan Anda sudah mendaftar dan email telah diverifikasi.' 
+            } 
+          };
+        } else if (error.message.includes('Email not confirmed')) {
+          return { 
+            data: null, 
+            error: { 
+              message: 'Silakan cek email Anda untuk konfirmasi akun terlebih dahulu.' 
+            } 
+          };
+        }
+        
         return { data: null, error };
       }
+      
+      console.log('✅ User signed in successfully:', data.user?.id);
       
       // Fetch profile after successful auth
       if (data.user) {
         const userProfile = await fetchProfile({ id: data.user.id });
+        if (!userProfile) {
+          console.warn('⚠️ User authenticated but no profile found');
+          return { 
+            data: null, 
+            error: { 
+              message: 'Account found but profile is missing. Please contact support.' 
+            } 
+          };
+        }
         setProfile(userProfile);
       }
       
       return { data, error: null };
     } catch (err) {
       console.error('SignIn catch error:', err);
-      return { data: null, error: { message: 'Failed to sign in' } };
+      return { data: null, error: { message: 'Gagal masuk. Silakan coba lagi.' } };
     }
   };
 
-  // Sign up with Supabase Auth and auto-create profile via trigger
+  // Manual profile creation
+  const createProfile = async (userId, email, firstname, lastname) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email,
+          firstname,
+          lastname: lastname || '',
+          password: '', // We don't store actual passwords here
+          total_badges: 0
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Also create badge stats entry
+      await supabase
+        .from('profile_badge_stats')
+        .insert({
+          profile_id: userId,
+          total_badges: 0
+        });
+
+      return data;
+    } catch (error) {
+      console.error('Error creating profile manually:', error);
+      throw error;
+    }
+  };
+
+  // Sign up with Supabase Auth and create profile
   const signUp = async (email, password, firstname, lastname = null) => {
     try {
-      // Create user with metadata for trigger - NEVER include password in metadata
+      console.log('🔄 Starting registration process...');
+      
+      // Clear any existing session first
+      await supabase.auth.signOut();
+      
+      // Create user with metadata for trigger
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password,
         options: {
           data: {
             firstname,
             lastname,
-            // ❌ REMOVED password from metadata for security
           }
         }
       });
 
-      if (authError) return { data: null, error: authError };
+      if (authError) {
+        console.error('Auth signup error:', authError);
+        return { data: null, error: authError };
+      }
 
-      // Profile will be created automatically by trigger
-      // Wait a moment for trigger to execute
+      console.log('✅ User created in auth:', authData.user?.id);
+
       if (authData.user) {
-        // Give trigger time to execute
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Fetch the created profile
-        const userProfile = await fetchProfile({ id: authData.user.id });
-        if (userProfile) {
-          setProfile(userProfile);
+        // Check if user needs email confirmation
+        if (!authData.user.email_confirmed_at && !authData.session) {
+          return { 
+            data: null, 
+            error: { 
+              message: 'Please check your email for verification link before signing in.' 
+            } 
+          };
         }
+
+        // Wait for trigger to execute
+        await new Promise(resolve => setTimeout(resolve, 1500));
         
+        // Check if profile was created by trigger
+        let userProfile = await fetchProfile({ id: authData.user.id });
+        
+        if (!userProfile) {
+          console.log('⚠️ Profile not created by trigger, creating manually...');
+          try {
+            userProfile = await createProfile(
+              authData.user.id, 
+              authData.user.email, 
+              firstname, 
+              lastname
+            );
+            console.log('✅ Profile created manually');
+          } catch (profileError) {
+            console.error('❌ Failed to create profile manually:', profileError);
+            return { 
+              data: null, 
+              error: { 
+                message: 'Account created but profile setup failed. Please contact support.' 
+              } 
+            };
+          }
+        } else {
+          console.log('✅ Profile created by trigger');
+        }
+
+        setProfile(userProfile);
         return { data: authData.user, error: null };
       }
 
       return { data: null, error: { message: 'Failed to create user' } };
     } catch (err) {
-      console.error('SignUp error:', err);
-      return { data: null, error: { message: 'Failed to sign up' } };
+      console.error('SignUp catch error:', err);
+      return { data: null, error: { message: 'Registration failed. Please try again.' } };
     }
   };
 

@@ -5,6 +5,7 @@ import { HomeIcon, HomeIcon2, MapIcon, MapIcon2, LeaderboardIcon, LeaderboardIco
 import HomeScreen from './screens/HomeScreen';
 import ExploreScreen from './screens/ExploreScreen';
 import HistoryScreen from './screens/HistoryScreen';
+import LeaderboardScreen from './screens/LeaderboardScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import QRScannerScreen from './screens/QRScannerScreen';
 import TripProgressScreen from './screens/TripProgressScreen';
@@ -43,7 +44,7 @@ export default function TabNavigation() {
     { 
       name: 'Leaderboard', 
       icon: (active) => active ? <LeaderboardIcon2 color="#461C07" size={24} /> : <LeaderboardIcon color="#9CA3AF" size={24} />,
-      component: HistoryScreen, 
+      component: LeaderboardScreen, 
       label: 'Leaderboard' 
     },
     { 

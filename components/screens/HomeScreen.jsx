@@ -6,22 +6,32 @@ import { BadgeIcon } from '../IconBar';
 
 export default function HomeScreen({ onTripStart }) {
   const [userBadges, setUserBadges] = useState([]);
+  const [totalBadges, setTotalBadges] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { user, profile } = useAuthContext();
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       loadUserData();
+    } else {
+      setLoading(false);
+      setRefreshing(false);
     }
   }, [user]);
 
   const loadUserData = async () => {
     try {
-      const badgesResult = await TripService.getUserBadges(user.id);
+      if (!user?.id) {
+        console.error('No user ID available');
+        return;
+      }
+
+      const badgesResult = await TripService.getUserBadgeStats(user.id);
       
       if (badgesResult.success) {
-        setUserBadges(badgesResult.data);
+        setUserBadges(badgesResult.data.badges_earned || []);
+        setTotalBadges(badgesResult.data.total_badges || 0);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -30,6 +40,8 @@ export default function HomeScreen({ onTripStart }) {
       setRefreshing(false);
     }
   };
+
+
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -45,6 +57,8 @@ export default function HomeScreen({ onTripStart }) {
     }
     return 'User';
   };
+
+
 
   return (
     <ScrollView 
@@ -101,10 +115,11 @@ export default function HomeScreen({ onTripStart }) {
                 color: '#1F2937'
               }}
             >
-              {userBadges.length || 99}
+              {totalBadges}
             </Text>
           </View>
         </View>
+
       </View>
 
       {/* Central Logo Section */}

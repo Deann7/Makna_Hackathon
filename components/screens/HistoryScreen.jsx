@@ -16,13 +16,18 @@ export default function HistoryScreen() {
   const filters = ['Semua', 'Selesai', 'Berlangsung'];
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       loadHistoryData();
     }
   }, [user]);
 
   const loadHistoryData = async () => {
     try {
+      if (!user?.id) {
+        console.error('No user ID available');
+        return;
+      }
+
       const [completedResult, activeResult, badgesResult] = await Promise.all([
         TripService.getTripHistory(user.id),
         TripService.getActiveTrips(user.id),
