@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Connection</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test Supabase Connection</h1>
+    <button onclick="testConnection()">Test Connection</button>
+    <button onclick="testGetAllSitus()">Get All Situs</button>
+    <button onclick="testValidateUID()">Test Validate UID</button>
+    <div id="results"></div>
+
+    <script>
+        // Supabase configuration
+        const SUPABASE_URL = 'https://jqztvttvcetsfzxejxmo.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxenR2dHR2Y2V0c2Z6eGVqeG1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNTg5MzksImV4cCI6MjA0ODkzNDkzOX0.1vpk1MHRYYAUe0j8DmQbhYKlCy3z6uCGr4Lw8tCFJjY';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function log(message) {
+            const results = document.getElementById('results');
+            results.innerHTML += `<p>${new Date().toLocaleTimeString()}: ${message}</p>`;
+            console.log(message);
+        }
+
+        async function testConnection() {
+            log('Testing Supabase connection...');
+            try {
+                const { data, error } = await supabase
+                    .from('situs')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    log(`❌ Connection error: ${error.message}`);
+                } else {
+                    log('✅ Supabase connection successful!');
+                }
+            } catch (err) {
+                log(`❌ Connection failed: ${err.message}`);
+            }
+        }
+
+        async function testGetAllSitus() {
+            log('Fetching all situs data...');
+            try {
+                const { data, error } = await supabase
+                    .from('situs')
+                    .select('*');
+                
+                if (error) {
+                    log(`❌ Error fetching situs: ${error.message}`);
+                } else {
+                    log(`✅ Found ${data.length} situs records:`);
+                    data.forEach(situs => {
+                        log(`  - ${situs.nama} (UID: ${situs.uid})`);
+                    });
+                }
+            } catch (err) {
+                log(`❌ Failed to fetch situs: ${err.message}`);
+            }
+        }
+
+        async function testValidateUID() {
+            const testUIDs = [
+                '01234567-89ab-cdef-0123-456789abcdef',
+                'fedcba98-7654-3210-fedc-ba9876543210',
+                'invalid-uid'
+            ];
+
+            for (const uid of testUIDs) {
+                log(`Testing UID: ${uid}`);
+                try {
+                    const { data, error } = await supabase
+                        .from('situs')
+                        .select('*')
+                        .eq('uid', uid);
+                    
+                    if (error) {
+                        log(`❌ Error validating UID ${uid}: ${error.message}`);
+                    } else if (data.length === 0) {
+                        log(`❌ UID ${uid} not found in database`);
+                    } else {
+                        log(`✅ UID ${uid} found: ${data[0].nama}`);
+                    }
+                } catch (err) {
+                    log(`❌ Failed to validate UID ${uid}: ${err.message}`);
+                }
+            }
+        }
+
+        // Auto test on load
+        window.addEventListener('load', () => {
+            log('Page loaded, ready for testing...');
+        });
+    </script>
+</body>
+</html>

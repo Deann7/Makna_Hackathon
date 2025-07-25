@@ -38,7 +38,7 @@ BEGIN
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'firstname', 'User'),
     COALESCE(NEW.raw_user_meta_data->>'lastname', 'Name'),
-    COALESCE(NEW.raw_user_meta_data->>'password', ''),
+    COALESCE(NEW.raw_user_meta_data->>'password', '')
   );
   RETURN NEW;
 END;
@@ -182,12 +182,11 @@ DECLARE
   v_building_count integer;
   v_situs_data jsonb;
 BEGIN
-  -- Find situs by QR code
-  SELECT uid INTO v_situs_uid 
-  FROM public.situs 
-  WHERE qr_code_data = p_qr_code_data;
+  -- QR code data should be the situs UID directly
+  v_situs_uid := p_qr_code_data::uuid;
   
-  IF v_situs_uid IS NULL THEN
+  -- Check if situs exists
+  IF NOT EXISTS (SELECT 1 FROM public.situs WHERE uid = v_situs_uid) THEN
     RAISE EXCEPTION 'Invalid QR code or situs not found';
   END IF;
   
@@ -322,16 +321,19 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Sample data for testing
-INSERT INTO public.situs (nama_situs, lokasi_daerah, informasi_situs, tahun_dibangun, qr_code_data, estimated_duration_minutes) VALUES
-('Candi Borobudur', 'Magelang, Jawa Tengah', 'Candi Buddha terbesar di dunia yang dibangun pada abad ke-8', 800, 'BOROBUDUR_QR_2024', 120),
-('Candi Prambanan', 'Yogyakarta', 'Kompleks candi Hindu terbesar di Indonesia', 850, 'PRAMBANAN_QR_2024', 90);
+INSERT INTO public.situs (uid, nama_situs, lokasi_daerah, informasi_situs, tahun_dibangun, qr_code_data, estimated_duration_minutes) VALUES
+('550e8400-e29b-41d4-a716-446655440000', 'Candi Borobudur', 'Magelang, Jawa Tengah', 'Candi Buddha terbesar di dunia yang dibangun pada abad ke-8', 800, '550e8400-e29b-41d4-a716-446655440000', 120),
+('550e8400-e29b-41d4-a716-446655440001', 'Candi Prambanan', 'Yogyakarta', 'Kompleks candi Hindu terbesar di Indonesia', 850, '550e8400-e29b-41d4-a716-446655440001', 90);
 
 INSERT INTO public.bangunan_situs (nama_bangunan, situs_uid, jenis_bangunan, kondisi, deskripsi, urutan_kunjungan) VALUES
-((SELECT uid FROM public.situs WHERE nama_situs = 'Candi Borobudur'), 'Gerbang Utama', 'Candi Borobudur', 'Baik', 'Pintu masuk utama ke kompleks Borobudur', 1),
-((SELECT uid FROM public.situs WHERE nama_situs = 'Candi Borobudur'), 'Tingkat Kamadhatu', 'Candi Borobudur', 'Baik', 'Tingkat dasar yang melambangkan dunia nafsu', 2),
-((SELECT uid FROM public.situs WHERE nama_situs = 'Candi Borobudur'), 'Tingkat Rupadhatu', 'Candi Borobudur', 'Baik', 'Tingkat tengah dengan relief cerita Buddha', 3),
-((SELECT uid FROM public.situs WHERE nama_situs = 'Candi Borobudur'), 'Tingkat Arupadhatu', 'Candi Borobudur', 'Baik', 'Tingkat tertinggi dengan stupa utama', 4);
+('Gerbang Utama', '550e8400-e29b-41d4-a716-446655440000', 'Gerbang', 'Baik', 'Pintu masuk utama ke kompleks Borobudur', 1),
+('Tingkat Kamadhatu', '550e8400-e29b-41d4-a716-446655440000', 'Tingkat Candi', 'Baik', 'Tingkat dasar yang melambangkan dunia nafsu', 2),
+('Tingkat Rupadhatu', '550e8400-e29b-41d4-a716-446655440000', 'Tingkat Candi', 'Baik', 'Tingkat tengah dengan relief cerita Buddha', 3),
+('Tingkat Arupadhatu', '550e8400-e29b-41d4-a716-446655440000', 'Tingkat Candi', 'Baik', 'Tingkat tertinggi dengan stupa utama', 4),
+('Candi Prambanan Utama', '550e8400-e29b-41d4-a716-446655440001', 'Candi Utama', 'Baik', 'Candi Hindu utama yang didedikasikan untuk Trimurti', 1),
+('Candi Brahma', '550e8400-e29b-41d4-a716-446655440001', 'Candi', 'Baik', 'Candi yang didedikasikan untuk Dewa Brahma', 2),
+('Candi Wisnu', '550e8400-e29b-41d4-a716-446655440001', 'Candi', 'Baik', 'Candi yang didedikasikan untuk Dewa Wisnu', 3);
 
 INSERT INTO public.badges (situs_uid, badge_title, badge_info, badge_image_url) VALUES
-((SELECT uid FROM public.situs WHERE nama_situs = 'Candi Borobudur'), 'Penjelajah Borobudur', 'Berhasil menyelesaikan perjalanan di Candi Borobudur', '/badges/borobudur-explorer.png'),
-((SELECT uid FROM public.situs WHERE nama_situs = 'Candi Prambanan'), 'Penjelajah Prambanan', 'Berhasil menyelesaikan perjalanan di Candi Prambanan', '/badges/prambanan-explorer.png');
+('550e8400-e29b-41d4-a716-446655440000', 'Penjelajah Borobudur', 'Berhasil menyelesaikan perjalanan di Candi Borobudur', '/badges/borobudur-explorer.png'),
+('550e8400-e29b-41d4-a716-446655440001', 'Penjelajah Prambanan', 'Berhasil menyelesaikan perjalanan di Candi Prambanan', '/badges/prambanan-explorer.png');

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAKNA QR Code Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #6F4E37;
+            margin-bottom: 30px;
+        }
+        .qr-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #6F4E37;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .qr-section h3 {
+            color: #6F4E37;
+            margin-bottom: 15px;
+        }
+        .qr-code {
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            display: inline-block;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .uid {
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .print-btn {
+            background: #6F4E37;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .print-btn:hover {
+            background: #5a3e2b;
+        }
+        @media print {
+            body { background: white; }
+            .container { box-shadow: none; }
+            .print-btn { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏛️ MAKNA Heritage Site QR Codes</h1>
+        
+        <div class="info">
+            <strong>Petunjuk Penggunaan:</strong>
+            <ul>
+                <li>QR Code berisi UID dari situs heritage yang terdaftar di database</li>
+                <li>Scan QR code menggunakan aplikasi MAKNA untuk melihat detail situs</li>
+                <li>Setelah scan, pengguna akan diarahkan ke halaman detail sebelum memulai trip</li>
+            </ul>
+        </div>
+
+        <div class="qr-section">
+            <h3>🕉️ Candi Borobudur</h3>
+            <div class="uid">UID: 550e8400-e29b-41d4-a716-446655440000</div>
+            <div class="qr-code">
+                <canvas id="qr-borobudur"></canvas>
+            </div>
+            <p><strong>Lokasi:</strong> Magelang, Jawa Tengah</p>
+            <p><strong>Estimasi Kunjungan:</strong> 120 menit</p>
+            <button class="print-btn" onclick="printQR('borobudur')">Print QR Borobudur</button>
+        </div>
+
+        <div class="qr-section">
+            <h3>🕉️ Candi Prambanan</h3>
+            <div class="uid">UID: 550e8400-e29b-41d4-a716-446655440001</div>
+            <div class="qr-code">
+                <canvas id="qr-prambanan"></canvas>
+            </div>
+            <p><strong>Lokasi:</strong> Yogyakarta</p>
+            <p><strong>Estimasi Kunjungan:</strong> 90 menit</p>
+            <button class="print-btn" onclick="printQR('prambanan')">Print QR Prambanan</button>
+        </div>
+
+        <div class="info">
+            <strong>Untuk Testing:</strong>
+            <ul>
+                <li>Gunakan camera app di ponsel untuk scan QR code di atas</li>
+                <li>Atau copy-paste UID ke dalam manual input di aplikasi web</li>
+                <li>Pastikan aplikasi MAKNA sudah terhubung ke database yang benar</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Generate QR codes when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const borobudurUID = '550e8400-e29b-41d4-a716-446655440000';
+            const prambananUID = '550e8400-e29b-41d4-a716-446655440001';
+
+            // Generate Borobudur QR Code
+            QRCode.toCanvas(document.getElementById('qr-borobudur'), borobudurUID, {
+                width: 200,
+                height: 200,
+                colorDark: '#6F4E37',
+                colorLight: '#FFFFFF',
+                margin: 2
+            });
+
+            // Generate Prambanan QR Code
+            QRCode.toCanvas(document.getElementById('qr-prambanan'), prambananUID, {
+                width: 200,
+                height: 200,
+                colorDark: '#6F4E37',
+                colorLight: '#FFFFFF',
+                margin: 2
+            });
+        });
+
+        function printQR(site) {
+            // Create a new window with just the QR code for printing
+            const qrCanvas = document.getElementById(`qr-${site}`);
+            const siteName = site === 'borobudur' ? 'Candi Borobudur' : 'Candi Prambanan';
+            const uid = site === 'borobudur' ? '550e8400-e29b-41d4-a716-446655440000' : '550e8400-e29b-41d4-a716-446655440001';
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>QR Code - ${siteName}</title>
+                        <style>
+                            body { text-align: center; font-family: Arial, sans-serif; margin: 20px; }
+                            .qr-container { border: 2px solid #6F4E37; padding: 20px; display: inline-block; }
+                            .site-name { color: #6F4E37; margin-bottom: 10px; }
+                            .uid { font-family: monospace; font-size: 12px; margin-top: 10px; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="qr-container">
+                            <h2 class="site-name">🏛️ ${siteName}</h2>
+                            <div>${qrCanvas.outerHTML}</div>
+                            <div class="uid">UID: ${uid}</div>
+                            <p>Scan untuk memulai perjalanan heritage</p>
+                        </div>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+    </script>
+</body>
+</html>

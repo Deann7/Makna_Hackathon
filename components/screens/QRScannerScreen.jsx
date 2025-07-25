@@ -4,12 +4,15 @@ import { CameraView, Camera } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { TripService } from '../../lib/tripService';
+import SitusQRDetailScreen from './SitusQRDetailScreen';
 
 export default function QRScannerScreen({ onTripStart, onClose }) {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [manualQRInput, setManualQRInput] = useState('');
+  const [showSitusDetail, setShowSitusDetail] = useState(false);
+  const [scannedQRData, setScannedQRData] = useState(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -25,98 +28,72 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
   const handleBarCodeScanned = async ({ type, data }) => {
     if (scanned || loading) return;
     
+    console.log('📷 QR Code scanned:', { type, data });
+    
     setScanned(true);
     setLoading(true);
 
     try {
       // Validate QR code first
+      console.log('🔍 Starting validation for:', data);
       const validationResult = await TripService.validateQRCode(data);
       
+      console.log('📋 Validation result:', validationResult);
+      
       if (!validationResult.success) {
+        console.error('❌ Validation failed:', validationResult.error);
         Alert.alert(
           'QR Code Tidak Valid',
-          'QR code yang Anda scan tidak ditemukan dalam sistem.',
+          `UID situs yang Anda masukkan tidak ditemukan dalam sistem.\n\nUID: ${data}\nError: ${validationResult.error}`,
           [{ text: 'OK', onPress: () => setScanned(false) }]
         );
         setLoading(false);
         return;
       }
 
-      const situsInfo = validationResult.data;
-
-      // Show confirmation before starting trip
-      Alert.alert(
-        'Memulai Perjalanan',
-        `Apakah Anda ingin memulai perjalanan di ${situsInfo.nama_situs}?\n\nLokasi: ${situsInfo.lokasi_daerah}\nEstimasi: ${situsInfo.estimated_duration_minutes} menit`,
-        [
-          {
-            text: 'Batal',
-            style: 'cancel',
-            onPress: () => {
-              setScanned(false);
-              setLoading(false);
-            }
-          },
-          {
-            text: 'Mulai',
-            onPress: () => startTrip(data)
-          }
-        ]
-      );
+      console.log('✅ Validation success, showing detail screen');
+      // Show situs detail screen
+      setScannedQRData(data);
+      setShowSitusDetail(true);
+      
     } catch (error) {
+      console.error('💥 Unexpected error:', error);
       Alert.alert('Error', 'Terjadi kesalahan saat memproses QR code');
       setScanned(false);
+    } finally {
       setLoading(false);
     }
   };
 
   const handleManualQRSubmit = () => {
     if (!manualQRInput.trim()) {
-      Alert.alert('Error', 'Masukkan kode QR terlebih dahulu');
+      Alert.alert('Error', 'Masukkan UID situs terlebih dahulu');
       return;
     }
     handleBarCodeScanned({ type: 'qr', data: manualQRInput.trim() });
   };
 
-  const startTrip = async (qrCodeData) => {
-    try {
-      const result = await TripService.startTrip(user.id, qrCodeData);
-      
-      if (result.success) {
-        const { trip_uid, situs_info, total_buildings } = result.data;
-        
-        Alert.alert(
-          'Perjalanan Dimulai!',
-          `Selamat datang di ${situs_info.nama_situs}!\n\nAnda akan mengunjungi ${total_buildings} bangunan bersejarah.`,
-          [
-            {
-              text: 'Mulai Jelajahi',
-              onPress: () => {
-                onTripStart({
-                  tripId: trip_uid,
-                  situsInfo: situs_info,
-                  totalBuildings: total_buildings
-                });
-                onClose();
-              }
-            }
-          ]
-        );
-      } else {
-        Alert.alert(
-          'Gagal Memulai Perjalanan',
-          result.error.includes('already has an active trip') 
-            ? 'Anda sudah memiliki perjalanan aktif untuk situs ini.' 
-            : result.error,
-          [{ text: 'OK', onPress: () => setScanned(false) }]
-        );
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Terjadi kesalahan saat memulai perjalanan');
-      setScanned(false);
-    }
+  const debugDatabase = async () => {
+    console.log('🔧 Starting database debug...');
+    const result = await TripService.getAllSitus();
+    console.log('🔧 Debug result:', result);
     
-    setLoading(false);
+    if (result.success) {
+      const situsCount = result.data?.length || 0;
+      Alert.alert(
+        'Database Debug', 
+        `Found ${situsCount} situs in database.\nCheck console for details.`,
+        [{ text: 'OK' }]
+      );
+    } else {
+      Alert.alert('Database Error', result.error);
+    }
+  };
+
+  const handleCloseSitusDetail = () => {
+    setShowSitusDetail(false);
+    setScannedQRData(null);
+    setScanned(false);
   };
 
   // Web version - Manual QR input
@@ -148,13 +125,13 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
           <Text className="text-batik-800 text-lg font-bold mb-4">Manual QR Input</Text>
           
           <View className="bg-white rounded-xl p-4 mb-4 border border-batik-200">
-            <Text className="text-batik-700 text-sm mb-2">Masukkan Kode QR:</Text>
+            <Text className="text-batik-700 text-sm mb-2">Masukkan UID Situs:</Text>
             <TextInput
               className="border border-batik-200 rounded-lg px-3 py-2 mb-4"
-              placeholder="Contoh: BOROBUDUR_QR_2024"
+              placeholder="Contoh: 01234567-89ab-cdef-0123-456789abcdef"
               value={manualQRInput}
               onChangeText={setManualQRInput}
-              autoCapitalize="characters"
+              autoCapitalize="none"
             />
             
             <TouchableOpacity
@@ -169,14 +146,14 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
           </View>
 
           <View className="bg-yellow-100 rounded-xl p-4 mb-4">
-            <Text className="text-yellow-800 font-bold mb-2">Available Test QR Codes:</Text>
-            <Text className="text-yellow-700 text-sm">• BOROBUDUR_QR_2024</Text>
-            <Text className="text-yellow-700 text-sm">• PRAMBANAN_QR_2024</Text>
+            <Text className="text-yellow-800 font-bold mb-2">Available Test QR Codes (UIDs):</Text>
+            <Text className="text-yellow-700 text-sm">• Borobudur: 01234567-89ab-cdef-0123-456789abcdef</Text>
+            <Text className="text-yellow-700 text-sm">• Prambanan: fedcba98-7654-3210-fedc-ba9876543210</Text>
           </View>
 
           <TouchableOpacity
             onPress={() => {
-              setManualQRInput('BOROBUDUR_QR_2024');
+              setManualQRInput('01234567-89ab-cdef-0123-456789abcdef');
               setTimeout(() => handleManualQRSubmit(), 100);
             }}
             className="bg-green-500 py-3 rounded-lg mb-3"
@@ -186,12 +163,19 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
 
           <TouchableOpacity
             onPress={() => {
-              setManualQRInput('PRAMBANAN_QR_2024');
+              setManualQRInput('fedcba98-7654-3210-fedc-ba9876543210');
               setTimeout(() => handleManualQRSubmit(), 100);
             }}
-            className="bg-green-500 py-3 rounded-lg"
+            className="bg-green-500 py-3 rounded-lg mb-3"
           >
             <Text className="text-white font-bold text-center">Quick Test: Prambanan</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={debugDatabase}
+            className="bg-orange-500 py-3 rounded-lg"
+          >
+            <Text className="text-white font-bold text-center">🔧 Debug Database Connection</Text>
           </TouchableOpacity>
         </View>
 
@@ -203,6 +187,15 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
               <Text className="text-batik-700 font-bold mt-2">Memproses...</Text>
             </View>
           </View>
+        )}
+
+        {/* Situs Detail Screen for Web */}
+        {showSitusDetail && scannedQRData && (
+          <SitusQRDetailScreen
+            qrCodeData={scannedQRData}
+            onClose={handleCloseSitusDetail}
+            onStartTrip={onTripStart}
+          />
         )}
       </View>
     );
@@ -296,6 +289,15 @@ export default function QRScannerScreen({ onTripStart, onClose }) {
             <Text className="text-batik-700 font-bold mt-2">Memproses...</Text>
           </View>
         </View>
+      )}
+
+      {/* Situs Detail Screen */}
+      {showSitusDetail && scannedQRData && (
+        <SitusQRDetailScreen
+          qrCodeData={scannedQRData}
+          onClose={handleCloseSitusDetail}
+          onStartTrip={onTripStart}
+        />
       )}
     </View>
   );
