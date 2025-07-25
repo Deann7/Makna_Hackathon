@@ -13,13 +13,8 @@ export function useAuth() {
       
       if (identifier?.id) {
         query = query.eq('id', identifier.id);
-      } else if (identifier?.username) {
-        query = query.eq('username', identifier.username);
       } else if (identifier?.email) {
         query = query.eq('email', identifier.email);
-      } else if (typeof identifier === 'string') {
-        // Try as username or email
-        query = query.or(`username.eq.${identifier},email.eq.${identifier}`);
       } else {
         return null;
       }
@@ -82,12 +77,18 @@ export function useAuth() {
   // Sign in with Supabase Auth
   const signIn = async (email, password) => {
     try {
+      // Clear any existing session first
+      await supabase.auth.signOut();
+      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(), // Normalize email
         password,
       });
       
-      if (error) return { data: null, error };
+      if (error) {
+        console.error('SignIn error:', error);
+        return { data: null, error };
+      }
       
       // Fetch profile after successful auth
       if (data.user) {
@@ -97,14 +98,15 @@ export function useAuth() {
       
       return { data, error: null };
     } catch (err) {
+      console.error('SignIn catch error:', err);
       return { data: null, error: { message: 'Failed to sign in' } };
     }
   };
 
   // Sign up with Supabase Auth and auto-create profile via trigger
-  const signUp = async (email, password, firstname, lastname, username = null) => {
+  const signUp = async (email, password, firstname, lastname = null) => {
     try {
-      // Create user with metadata for trigger
+      // Create user with metadata for trigger - NEVER include password in metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -112,8 +114,7 @@ export function useAuth() {
           data: {
             firstname,
             lastname,
-            password, // Note: storing password in plaintext is not recommended for production
-            username: username || `${firstname.toLowerCase()}_${lastname.toLowerCase()}`,
+            // ❌ REMOVED password from metadata for security
           }
         }
       });
@@ -137,6 +138,7 @@ export function useAuth() {
 
       return { data: null, error: { message: 'Failed to create user' } };
     } catch (err) {
+      console.error('SignUp error:', err);
       return { data: null, error: { message: 'Failed to sign up' } };
     }
   };

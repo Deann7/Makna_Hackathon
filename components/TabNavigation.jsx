@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity, Text, Dimensions, Modal, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { isWeb, webSafeAreaInsets } from './WebCompatibility';
 import HomeScreen from './screens/HomeScreen';
 import ExploreScreen from './screens/ExploreScreen';
 import HistoryScreen from './screens/HistoryScreen';
@@ -11,7 +10,6 @@ import QRScannerScreen from './screens/QRScannerScreen';
 import TripProgressScreen from './screens/TripProgressScreen';
 import TestQRData from './TestQRData';
 import TestAuthFlow from './TestAuthFlow';
-import WebDebugBanner from './WebDebugBanner';
 
 const { width } = Dimensions.get('window');
 
@@ -22,7 +20,7 @@ export default function TabNavigation() {
   const [showTestAuth, setShowTestAuth] = useState(false);
   const [activeTripData, setActiveTripData] = useState(null);
   const [showTripProgress, setShowTripProgress] = useState(false);
-  const insets = isWeb ? webSafeAreaInsets : useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
 
   const tabs = [
     { name: 'Home', icon: 'home', iconOutline: 'home-outline', component: HomeScreen, label: 'Beranda' },
@@ -56,10 +54,7 @@ export default function TabNavigation() {
   };
 
   return (
-    <View className="flex-1" style={isWeb ? { maxWidth: 480, marginHorizontal: 'auto', backgroundColor: '#f8fafc' } : {}}>
-      {/* Web Debug Banner */}
-      <WebDebugBanner />
-      
+    <View className="flex-1">
       {/* Main Content */}
       <View className="flex-1">
         {renderContent()}

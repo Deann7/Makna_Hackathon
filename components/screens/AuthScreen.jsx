@@ -28,9 +28,16 @@ export default function AuthScreen() {
       return;
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Error', 'Format email tidak valid');
+      return;
+    }
+
     setLoading(true);
     try {
-      const result = await signIn(email, password);
+      const result = await signIn(email.trim().toLowerCase(), password);
       if (result.error) {
         if (result.error.message.includes('Invalid login credentials')) {
           Alert.alert('Login Gagal', 'Email atau password salah. Pastikan Anda sudah terdaftar.');
@@ -42,6 +49,7 @@ export default function AuthScreen() {
       }
       // Success case handled by auth state change
     } catch (err) {
+      console.error('SignIn UI error:', err);
       Alert.alert('Error', 'Terjadi kesalahan tidak terduga');
     } finally {
       setLoading(false);
@@ -49,29 +57,40 @@ export default function AuthScreen() {
   };
 
   const handleRegisterSubmit = async () => {
-    if (!email || !password || !confirmPassword || !firstName || !lastName) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!email || !password || !confirmPassword || !firstName) {
+      Alert.alert('Error', 'Mohon isi semua field yang wajib (Last name opsional)');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Error', 'Format email tidak valid');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert('Error', 'Password tidak cocok');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
+      Alert.alert('Error', 'Password minimal 6 karakter');
       return;
     }
 
     setLoading(true);
     try {
-      // Generate username from first and last name
-      const username = `${firstName.toLowerCase()}_${lastName.toLowerCase()}`;
-      
-      const result = await signUp(email, password, firstName, lastName, username);
+      const result = await signUp(
+        email.trim().toLowerCase(), 
+        password, 
+        firstName.trim(), 
+        lastName.trim() || null
+      );
       if (result.error) {
         if (result.error.message.includes('already registered')) {
+          Alert.alert('Error', 'Email sudah terdaftar. Silakan gunakan email lain atau login.');
+        } else if (result.error.message.includes('User already registered')) {
           Alert.alert('Error', 'Email sudah terdaftar. Silakan gunakan email lain atau login.');
         } else {
           Alert.alert('Error', result.error.message);
@@ -96,6 +115,7 @@ export default function AuthScreen() {
         );
       }
     } catch (err) {
+      console.error('Register UI error:', err);
       Alert.alert('Error', 'Terjadi kesalahan tidak terduga');
     } finally {
       setLoading(false);
