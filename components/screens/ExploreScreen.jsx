@@ -1,312 +1,245 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, RefreshControl, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import QuestDetailScreen from './QuestDetailScreen';
+import { TripService } from '../../lib/tripService';
+import { getImageUrl } from '../../lib/supabase';
+import SitusDetailScreen from './SitusDetailScreen';
 
-export default function ExploreScreen() {
+export default function ExploreScreen({ onTripStart }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('Semua');
-  const [selectedQuest, setSelectedQuest] = useState(null);
-  const [showQuestModal, setShowQuestModal] = useState(false);
+  const [situsData, setSitusData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedSitus, setSelectedSitus] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
-  const categories = ['Semua', 'Candi', 'Desa Budaya', 'Museum', 'Keraton'];
-  
-  const culturalDestinations = [
-    {
-      id: 1,
-      title: 'Candi Borobudur',
-      location: 'Magelang, Jawa Tengah',
-      category: 'Candi',
-      difficulty: 'Pemula',
-      duration: '45 menit',
-      description: 'Jelajahi sejarah kemegahan candi Buddha terbesar di dunia dan temukan makna filosofis setiap reliefnya.',
-      questContent: {
-        video: 'https://example.com/borobudur-video',
-        story: 'Candi Borobudur dibangun pada abad ke-8 oleh Dinasti Syailendra. Candi ini merupakan representasi dari konsep alam semesta dalam kosmologi Buddha...',
-        highlights: [
-          'Sejarah pembangunan yang memakan waktu 75 tahun',
-          'Makna filosofis 2.672 panel relief',
-          'Fungsi sebagai tempat ibadah dan meditasi',
-          'Proses restorasi modern yang menakjubkan'
-        ]
-      },
-      completed: false,
-      rating: 4.9
-    },
-    {
-      id: 2,
-      title: 'Candi Prambanan',
-      location: 'Yogyakarta',
-      category: 'Candi',
-      difficulty: 'Menengah',
-      duration: '50 menit',
-      description: 'Masuki dunia epik Ramayana melalui relief-relief indah candi Hindu terbesar di Indonesia.',
-      questContent: {
-        video: 'https://example.com/prambanan-video',
-        story: 'Candi Prambanan atau Loro Jonggrang adalah kompleks candi Hindu terbesar di Indonesia yang dibangun pada abad ke-9...',
-        highlights: [
-          'Arsitektur Hindu klasik yang megah',
-          'Cerita Ramayana dalam relief batu',
-          'Legenda Loro Jonggrang',
-          'Simbolisme Trimurti: Brahma, Wisnu, Siwa'
-        ]
-      },
-      completed: true,
-      rating: 4.8
-    },
-    {
-      id: 3,
-      title: 'Desa Penglipuran',
-      location: 'Bangli, Bali',
-      category: 'Desa Budaya',
-      difficulty: 'Pemula',
-      duration: '40 menit',
-      description: 'Rasakan kehidupan tradisional Bali di desa yang mempertahankan adat istiadat leluhur.',
-      questContent: {
-        video: 'https://example.com/penglipuran-video',
-        story: 'Desa Penglipuran dikenal sebagai salah satu desa terindah di dunia berkat kelestarian budaya dan lingkungannya...',
-        highlights: [
-          'Arsitektur rumah tradisional Bali',
-          'Sistem sosial dan budaya yang unik',
-          'Kelestarian lingkungan berbasis kearifan lokal',
-          'Upacara adat yang masih dijaga'
-        ]
-      },
-      completed: false,
-      rating: 4.7
-    },
-    {
-      id: 4,
-      title: 'Museum Nasional',
-      location: 'Jakarta Pusat',
-      category: 'Museum',
-      difficulty: 'Menengah',
-      duration: '60 menit',
-      description: 'Telusuri ribuan tahun sejarah Nusantara melalui koleksi artefak yang tak ternilai.',
-      questContent: {
-        video: 'https://example.com/museum-nasional-video',
-        story: 'Museum Nasional Indonesia, atau yang dikenal sebagai Museum Gajah, menyimpan kekayaan budaya dari seluruh Nusantara...',
-        highlights: [
-          'Koleksi etnografi terlengkap di Asia Tenggara',
-          'Artefak prasejarah Nusantara',
-          'Keragaman budaya dari 34 provinsi',
-          'Arca dan prasasti bersejarah'
-        ]
-      },
-      completed: false,
-      rating: 4.6
-    },
-    {
-      id: 5,
-      title: 'Keraton Yogyakarta',
-      location: 'Yogyakarta',
-      category: 'Keraton',
-      difficulty: 'Lanjutan',
-      duration: '55 menit',
-      description: 'Masuki istana yang masih berfungsi dan pelajari filosofi Jawa dalam arsitektur dan tata ruangnya.',
-      questContent: {
-        video: 'https://example.com/keraton-video',
-        story: 'Keraton Ngayogyakarta Hadiningrat adalah istana resmi Kesultanan Yogyakarta yang dibangun oleh Sultan Hamengku Buwono I...',
-        highlights: [
-          'Filosofi Jawa dalam arsitektur istana',
-          'Sistem pemerintahan tradisional yang masih berjalan',
-          'Koleksi pusaka dan benda bersejarah',
-          'Seni dan budaya keraton'
-        ]
-      },
-      completed: false,
-      rating: 4.8
-    },
-    {
-      id: 6,
-      title: 'Desa Wae Rebo',
-      location: 'Manggarai, Flores',
-      category: 'Desa Budaya',
-      difficulty: 'Lanjutan',
-      duration: '50 menit',
-      description: 'Jelajahi desa di atas awan dengan rumah adat Mbaru Niang yang unik dan filosofi hidup yang harmonis.',
-      questContent: {
-        video: 'https://example.com/wae-rebo-video',
-        story: 'Desa Wae Rebo terletak di ketinggian 1.200 meter di atas permukaan laut dengan rumah adat berbentuk kerucut...',
-        highlights: [
-          'Arsitektur rumah adat Mbaru Niang',
-          'Sistem sosial dan gotong royong',
-          'Harmonisasi dengan alam',
-          'Ritual dan upacara adat Manggarai'
-        ]
-      },
-      completed: false,
-      rating: 4.9
+  useEffect(() => {
+    loadSitusData();
+  }, []);
+
+  const loadSitusData = async () => {
+    try {
+      const result = await TripService.getAvailableSitus();
+      if (result.success) {
+        setSitusData(result.data);
+      }
+    } catch (error) {
+      console.error('Error loading situs data:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  ];
+  };
 
-  const filteredDestinations = culturalDestinations.filter(destination => 
-    (activeCategory === 'Semua' || destination.category === activeCategory) &&
-    destination.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadSitusData();
+  };
+
+  const filteredSitus = situsData.filter(situs =>
+    situs.nama_situs.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    situs.lokasi_daerah.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case 'Pemula': return 'bg-green-100 text-green-700';
-      case 'Menengah': return 'bg-yellow-100 text-yellow-700';
-      case 'Lanjutan': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
+  const handleSeeDetails = (situs) => {
+    setSelectedSitus(situs);
+    setShowDetailModal(true);
+  };
+
+  const handleStartTrip = (situs) => {
+    setShowDetailModal(false);
+    // Call the trip start function passed from parent
+    if (onTripStart) {
+      onTripStart({
+        situsInfo: situs,
+        totalBuildings: situs.bangunan_count?.[0]?.count || 0
+      });
     }
   };
 
-  const handleStartQuest = (destination) => {
-    setSelectedQuest(destination);
-    setShowQuestModal(true);
-  };
+  if (loading) {
+    return (
+      <View className="flex-1 bg-white justify-center items-center">
+        <Text style={{
+          fontFamily: 'Poppins_400Regular',
+          fontSize: 16,
+          color: '#6B7280'
+        }}>
+          Loading destinations...
+        </Text>
+      </View>
+    );
+  }
 
   return (
-    <View className="flex-1 bg-batik-50">
+    <View className="flex-1 bg-white">
       {/* Header */}
-      <View className="bg-batik-700 px-4 py-6 rounded-b-3xl">
-        <Text className="text-batik-100 text-2xl font-bold mb-4">Jelajahi Budaya</Text>
+      <View className="px-6 pt-12 pb-6">
+        <Text 
+          className="text-3xl mb-2"
+          style={{
+            fontFamily: 'Poppins_600SemiBold',
+            fontSize: 28,
+            color: '#1F2937'
+          }}
+        >
+          Search
+        </Text>
+        <Text 
+          className="text-base mb-6"
+          style={{
+            fontFamily: 'Poppins_400Regular',
+            fontSize: 16,
+            color: '#6B7280'
+          }}
+        >
+          Discover the best place from Nusantara!
+        </Text>
         
         {/* Search Input */}
-        <View className="bg-batik-100 flex-row items-center px-4 py-3 rounded-xl">
-          <Ionicons name="search" size={20} color="#6F4E37" />
+        <View className="bg-gray-100 flex-row items-center px-4 py-3 rounded-xl">
+          <Ionicons name="search" size={20} color="#6B7280" />
           <TextInput
-            className="text-batik-700 ml-3 flex-1"
-            placeholder="Cari destinasi budaya..."
-            placeholderTextColor="#A0522D"
+            className="ml-3 flex-1"
+            placeholder="Search"
+            placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={setSearchQuery}
+            style={{
+              fontFamily: 'Poppins_400Regular',
+              fontSize: 16,
+              color: '#1F2937'
+            }}
           />
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-4 py-6">
-        {/* Category Filter */}
-        <View className="mb-6">
-          <Text className="text-batik-800 text-lg font-bold mb-3">Kategori</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category}
-                onPress={() => setActiveCategory(category)}
-                className={`px-4 py-2 rounded-full mr-3 ${
-                  activeCategory === category 
-                    ? 'bg-batik-600' 
-                    : 'bg-white border border-batik-300'
-                }`}
-              >
-                <Text className={`font-medium ${
-                  activeCategory === category 
-                    ? 'text-batik-100' 
-                    : 'text-batik-700'
-                }`}>
-                  {category}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Featured Quest */}
-        <View className="mb-6">
-          <Text className="text-batik-800 text-lg font-bold mb-3">Quest Unggulan</Text>
-          <TouchableOpacity 
-            className="bg-white rounded-xl p-4 border-2 border-batik-300"
-            onPress={() => handleStartQuest(culturalDestinations[0])}
-          >
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="bg-yellow-100 px-2 py-1 rounded-full">
-                <Text className="text-yellow-700 text-xs font-bold">⭐ FEATURED</Text>
-              </View>
-              <View className="flex-row items-center">
-                <Ionicons name="star" size={16} color="#FCD34D" />
-                <Text className="text-batik-600 text-sm ml-1">4.9</Text>
-              </View>
-            </View>
-            <Text className="text-batik-800 text-xl font-bold mb-1">Candi Borobudur</Text>
-            <Text className="text-batik-600 text-sm mb-3">Magelang, Jawa Tengah</Text>
-            <Text className="text-batik-700 text-sm mb-4">
-              Jelajahi sejarah kemegahan candi Buddha terbesar di dunia dan temukan makna filosofis setiap reliefnya.
-            </Text>
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center space-x-4">
-                <View className="flex-row items-center">
-                  <Ionicons name="time" size={16} color="#A0522D" />
-                  <Text className="text-batik-600 text-xs ml-1">45 menit</Text>
+      <ScrollView 
+        className="flex-1 px-6"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Grid Layout */}
+        <View className="flex-row flex-wrap justify-between">
+          {filteredSitus.map((situs, index) => (
+            <View key={situs.uid} className="w-[48%] mb-6">
+              {/* Card Image */}
+              {situs.image_situs ? (
+                <Image 
+                  source={{ 
+                    uri: getImageUrl(situs.image_situs),
+                    headers: {
+                      Accept: 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                    },
+                    cache: 'force-cache'
+                  }}
+                  className="w-full h-32 rounded-t-xl"
+                  style={{ resizeMode: 'cover' }}
+                  onError={(e) => {
+                    console.error('Image load error:', e.nativeEvent.error);
+                  }}
+                />
+              ) : (
+                <View 
+                  className="w-full h-32 bg-gray-200 rounded-t-xl justify-center items-center"
+                  style={{ backgroundColor: '#F3F4F6' }}
+                >
+                  <Ionicons name="image-outline" size={40} color="#9CA3AF" />
                 </View>
-                <View className="bg-green-100 px-2 py-1 rounded-full">
-                  <Text className="text-green-700 text-xs font-medium">Pemula</Text>
-                </View>
-              </View>
-              <View className="bg-batik-600 px-4 py-2 rounded-lg">
-                <Text className="text-batik-100 font-medium text-sm">Mulai Quest</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Quest List */}
-        <View>
-          <Text className="text-batik-800 text-lg font-bold mb-3">
-            Semua Quest ({filteredDestinations.length})
-          </Text>
-          
-          {filteredDestinations.map((destination) => (
-            <TouchableOpacity 
-              key={destination.id}
-              className="bg-white rounded-xl p-4 mb-3 border border-batik-200"
-              onPress={() => handleStartQuest(destination)}
-            >
-              <View className="flex-row items-start justify-between mb-2">
-                <View className="flex-1">
-                  <View className="flex-row items-center mb-1">
-                    <Text className="text-batik-800 font-bold text-lg flex-1">{destination.title}</Text>
-                    {destination.completed && (
-                      <View className="bg-green-100 w-6 h-6 rounded-full justify-center items-center ml-2">
-                        <Ionicons name="checkmark" size={14} color="#10B981" />
-                      </View>
-                    )}
-                  </View>
-                  <Text className="text-batik-600 text-sm mb-2">{destination.location}</Text>
-                  <Text className="text-batik-700 text-sm mb-3" numberOfLines={2}>
-                    {destination.description}
-                  </Text>
-                </View>
-              </View>
+              )}
               
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center space-x-3">
-                  <View className="flex-row items-center">
-                    <Ionicons name="time" size={14} color="#A0522D" />
-                    <Text className="text-batik-600 text-xs ml-1">{destination.duration}</Text>
-                  </View>
-                  <View className={`px-2 py-1 rounded-full ${getDifficultyColor(destination.difficulty)}`}>
-                    <Text className="text-xs font-medium">{destination.difficulty}</Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Ionicons name="star" size={14} color="#FCD34D" />
-                    <Text className="text-batik-600 text-xs ml-1">{destination.rating}</Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#A0522D" />
+              {/* Card Content */}
+              <View className="bg-white border border-gray-200 rounded-b-xl p-3">
+                <Text 
+                  className="text-sm font-medium mb-1"
+                  numberOfLines={2}
+                  style={{
+                    fontFamily: 'Poppins_500Medium',
+                    fontSize: 14,
+                    color: '#1F2937'
+                  }}
+                >
+                  {situs.nama_situs}
+                </Text>
+                <Text 
+                  className="text-xs mb-3"
+                  numberOfLines={1}
+                  style={{
+                    fontFamily: 'Poppins_400Regular',
+                    fontSize: 12,
+                    color: '#6B7280'
+                  }}
+                >
+                  {situs.lokasi_daerah}
+                </Text>
+                
+                <TouchableOpacity
+                  onPress={() => handleSeeDetails(situs)}
+                  className="rounded-lg py-2 px-3"
+                  style={{ backgroundColor: '#461C07' }}
+                  activeOpacity={0.8}
+                >
+                  <Text 
+                    className="text-center text-white text-xs"
+                    style={{
+                      fontFamily: 'Poppins_500Medium',
+                      fontSize: 12
+                    }}
+                  >
+                    See Details
+                  </Text>
+                </TouchableOpacity>
               </View>
-            </TouchableOpacity>
+            </View>
           ))}
         </View>
+
+        {/* Empty State */}
+        {filteredSitus.length === 0 && (
+          <View className="flex-1 justify-center items-center py-20">
+            <Ionicons name="search-outline" size={64} color="#D1D5DB" />
+            <Text 
+              className="mt-4 text-center"
+              style={{
+                fontFamily: 'Poppins_500Medium',
+                fontSize: 18,
+                color: '#6B7280'
+              }}
+            >
+              No destinations found
+            </Text>
+            <Text 
+              className="mt-2 text-center"
+              style={{
+                fontFamily: 'Poppins_400Regular',
+                fontSize: 14,
+                color: '#9CA3AF'
+              }}
+            >
+              Try searching with different keywords
+            </Text>
+          </View>
+        )}
+
+        {/* Bottom spacing */}
+        <View className="h-20" />
       </ScrollView>
 
-      {/* Quest Detail Modal */}
+      {/* Situs Detail Modal */}
       <Modal
-        visible={showQuestModal}
+        visible={showDetailModal}
         animationType="slide"
-        onRequestClose={() => setShowQuestModal(false)}
+        onRequestClose={() => setShowDetailModal(false)}
       >
-        <View className="flex-1">
-          {selectedQuest && (
-            <QuestDetailScreen 
-              quest={selectedQuest}
-              onClose={() => setShowQuestModal(false)}
-            />
-          )}
-        </View>
+        {selectedSitus && (
+          <SitusDetailScreen 
+            situs={selectedSitus}
+            onClose={() => setShowDetailModal(false)}
+            onStartTrip={() => handleStartTrip(selectedSitus)}
+          />
+        )}
       </Modal>
     </View>
   );

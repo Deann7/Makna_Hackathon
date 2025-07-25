@@ -40,7 +40,6 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'firstname', 'User'),
     COALESCE(NEW.raw_user_meta_data->>'lastname', 'Name'),
     COALESCE(NEW.raw_user_meta_data->>'password', ''),
-    COALESCE(NEW.raw_user_meta_data->>'username', LOWER(COALESCE(NEW.raw_user_meta_data->>'firstname', 'user') || '_' || COALESCE(NEW.raw_user_meta_data->>'lastname', 'name')))
   );
   RETURN NEW;
 END;
